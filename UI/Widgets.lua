@@ -179,6 +179,57 @@ function W.Edit(parent, width, onChange)
   return e
 end
 
+-- Money field: gold, silver and copper boxes with coin icons. Values are in copper.
+local COINS = {
+  { "Interface\\MoneyFrame\\UI-GoldIcon", 10000, 46 },
+  { "Interface\\MoneyFrame\\UI-SilverIcon", 100, 26 },
+  { "Interface\\MoneyFrame\\UI-CopperIcon", 1, 26 },
+}
+
+function W.Money(parent, onChange)
+  local f = CreateFrame("Frame", nil, parent)
+  f.boxes = {}
+  local x = 0
+  local function changed()
+    if onChange then onChange(f:GetValue()) end
+  end
+  for i, coin in ipairs(COINS) do
+    local e = W.Edit(f, coin[3], changed)
+    e:SetPoint("LEFT", f, "LEFT", x + 6, 0)
+    e:SetMaxLetters(i == 1 and 7 or 2)
+    local icon = f:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(13, 13)
+    icon:SetPoint("LEFT", e, "RIGHT", 2, 0)
+    icon:SetTexture(coin[1])
+    f.boxes[i] = e
+    x = x + coin[3] + 24
+  end
+  f:SetSize(x, 20)
+
+  function f:GetValue()
+    local total = 0
+    for i, coin in ipairs(COINS) do
+      total = total + (tonumber(self.boxes[i]:GetText()) or 0) * coin[2]
+    end
+    return math.max(0, math.floor(total))
+  end
+
+  function f:SetValue(copper)
+    copper = math.max(0, math.floor(copper or 0))
+    local parts = { math.floor(copper / 10000), math.floor(copper % 10000 / 100), copper % 100 }
+    for i, e in ipairs(self.boxes) do e:SetText(tostring(parts[i])) end
+  end
+
+  function f:HasFocus()
+    for _, e in ipairs(self.boxes) do
+      if e:HasFocus() then return true end
+    end
+    return false
+  end
+
+  return f
+end
+
 function W.Check(parent, key, onClick)
   local c = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
   c:SetSize(22, 22)

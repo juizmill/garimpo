@@ -222,7 +222,7 @@ local function buildRoute(parent, view)
           if r.untested then sub = sub .. " · " .. L.UNTESTED end
           d.cells[2] = text .. "\n|cff" .. MUTED .. sub .. "|r"
           local best = 0
-          for _, id in ipairs(s.items or {}) do best = math.max(best, ns.Price(id) or 0) end
+          for _, id in ipairs(s.items or {}) do best = math.max(best, ns.Market(id) or 0) end
           d.cells[3] = best > 0 and ns.Money(best) or ""
           d.icon, d.iconCol = s.items and ns.ItemIcon(s.items[1]) or nil, 2
           d.cells[4] = r.status == "done" and W.Pill("done") or (r.status == "current" and W.Pill("current") or "")
@@ -290,7 +290,7 @@ local function buildRoute(parent, view)
       self.stat2.label:SetText(L.STAT_BUY_ALL)
       self.stat3.label:SetText(L.STAT_YOUR_PLAN)
       local list = ns:ProfessionNeeds(key)
-      local plan = ns:Plan(list, ns.db.settings.prof.budget)
+      local plan = ns:Plan(list, ns.db.settings.prof.budgetCopper)
       self.stat2:Set(ns.Money(plan.allBuy))
       self.stat3:Set(ns.Money(plan.gold) .. ns.Color(MUTED, " + " .. ns.Duration(plan.minutes)))
     end
@@ -326,18 +326,15 @@ local function buildPlan(parent, view)
   local budgetLabel = W.Font(f, 12, W.C.ink)
   budgetLabel:SetPoint("TOPLEFT", 0, -82)
   W.Label(budgetLabel, "BUDGET")
-  f.budget = W.Edit(f, 60, function(text)
-    f.budgetValue = tonumber(text) or 0
+  f.budget = W.Money(f, function(copper)
+    f.budgetValue = copper
     f:Refresh()
   end)
-  f.budget:SetPoint("LEFT", budgetLabel, "RIGHT", 10, 0)
-  local g = W.Font(f, 12, W.C.muted)
-  g:SetPoint("LEFT", f.budget, "RIGHT", 4, 0)
-  g:SetText("g")
+  f.budget:SetPoint("LEFT", budgetLabel, "RIGHT", 4, 0)
 
   f.extremes = W.Chips(f, function(v)
-    f.budgetValue = v == "all" and math.ceil((f.allBuy or 0) / 10000) or 0
-    f.budget:SetText(tostring(f.budgetValue))
+    f.budgetValue = v == "all" and math.ceil(f.allBuy or 0) or 0
+    f.budget:SetValue(f.budgetValue)
     f:Refresh()
   end)
   f.extremes:SetPoint("TOPRIGHT", 0, -80)
@@ -364,8 +361,8 @@ local function buildPlan(parent, view)
 
   function f:Open(key)
     self.key = key
-    self.budgetValue = ns.db.settings.prof.budget
-    self.budget:SetText(tostring(self.budgetValue))
+    self.budgetValue = ns.db.settings.prof.budgetCopper
+    self.budget:SetValue(self.budgetValue)
     self:Refresh()
   end
 
@@ -396,19 +393,21 @@ local function buildPlan(parent, view)
     end
     self.list:SetData(data, L.NOTHING_NEEDED)
     self.compare:SetText(L.COMPARE:format(ns.PlainMoney(plan.allBuy), ns.Duration(plan.allFarm)) .. "  " .. L.MAKE_NOTE)
-    self.search:SetEnabled(ns.ahOpen == true and ns.HasAuctionator())
+    self.search:SetEnabled(ns.ahOpen == true and ns.scan.state == "idle")
   end
 
+  -- Searches the items to buy and opens the Deals tab with the cheapest listing of each.
   function f:SearchAH()
-    if not (ns.ahOpen and ns.HasAuctionator() and Auctionator.API.v1.MultiSearchExact) then return end
-    local names = {}
+    if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
+    local ids = {}
     for _, e in ipairs(self.list_ or {}) do
-      if e.buy and e.buy > 0 and not e.vendor then
-        local name = type(e.id) == "number" and ns.ItemInfo(e.id)
-        if name then names[#names + 1] = name end
-      end
+      if e.buy and e.buy > 0 and not e.vendor and type(e.id) == "number" then ids[#ids + 1] = e.id end
     end
-    if #names > 0 then pcall(Auctionator.API.v1.MultiSearchExact, ns.callerID, names) end
+    if #ids == 0 then return end
+    ns:QuickSearch(ids, function()
+      ns.dealsMode = "search"
+      ns:ShowAuctionTab("deals")
+    end)
   end
 
   return f

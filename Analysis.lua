@@ -69,45 +69,40 @@ end
 
 -- Prices and history
 
+-- Items the Ranking, routes and bags care about; the quick search scans these.
 function ns:TrackedItems()
-  local t = {}
+  local t, list = {}, {}
+  local function add(id)
+    if type(id) == "number" and not t[id] then t[id] = true; list[#list + 1] = id end
+  end
   for _, cat in ipairs(ns.Categories) do
     for _, tier in ipairs(cat.tiers or {}) do
-      for _, it in ipairs(tier.items) do t[it[1]] = true end
+      for _, it in ipairs(tier.items) do add(it[1]) end
     end
-    for _, id in ipairs(cat.items or {}) do t[id] = true end
+    for _, id in ipairs(cat.items or {}) do add(id) end
   end
   for id, r in pairs(ns.Reagents) do
-    if not r.vendor then t[id] = true end
+    if not r.vendor then add(id) end
   end
-  for id in pairs(self:BagCounts(true)) do t[id] = true end
-  return t
+  for id in pairs(self:BagCounts(true)) do add(id) end
+  return list
 end
 
-function ns:SnapshotPrices()
-  if not ns.HasAuctionator() or not self.db then return end
-  local prices, day = self.db.prices, ns.Today()
-  for id in pairs(self:TrackedItems()) do
-    local p = ns.Price(id)
-    if p then
-      prices[id] = prices[id] or {}
-      prices[id][day] = p
-    end
-  end
-  local cutoff = day - 35
-  for id, history in pairs(prices) do
+-- Drops price history older than 35 days. Called after each scan.
+function ns:PruneHistory()
+  local cutoff = ns.Today() - 35
+  for id, history in pairs(self.db.prices) do
     for d in pairs(history) do
       if d < cutoff then history[d] = nil end
     end
-    if next(history) == nil then prices[id] = nil end
+    if next(history) == nil then self.db.prices[id] = nil end
   end
-  self.db.lastPriceUpdate = time()
 end
 
--- Returns current price, 7-day average, change since the last recorded day, and
--- difference from the 7-day average (fractions).
+-- Returns current market value, 7-day average, change since the last recorded day,
+-- difference from the 7-day average (fractions) and how many past days are recorded.
 function ns:PriceStats(id)
-  local cur = ns.Price(id)
+  local cur = ns.Market(id)
   local history = self.db and self.db.prices[id]
   local today = ns.Today()
   local sum, n, prevDay, prev = 0, 0, nil, nil
@@ -122,7 +117,7 @@ function ns:PriceStats(id)
   local avg = n > 0 and sum / n or nil
   local change = (cur and prev and prev > 0) and (cur - prev) / prev or nil
   local diff = (cur and avg and avg > 0) and (cur - avg) / avg or nil
-  return cur, avg, change, diff
+  return cur, avg, change, diff, n
 end
 
 -- "sell" when the price is 10% above its 7-day average, "hold" when 10% below.
@@ -246,7 +241,7 @@ function ns:RankCategories()
       local bestValue = 0
       for id in pairs(self:BagCounts(true)) do
         if isTransmog(id) then
-          local p = ns.Price(id)
+          local p = ns.Market(id)
           if p and p > bestValue then row.item, bestValue = id, p end
         end
       end
@@ -368,7 +363,7 @@ function ns:RecordLoot(link, qty)
   if not id then return end
   self:RecordNode(id)
   local cat = self:CategoryOf(id)
-  local price = cat and ns.Price(id)
+  local price = cat and ns.Market(id)
   if not price then return end
   local now = time()
   local f = self.db.farm[cat] or { value = 0, seconds = 0 }
@@ -608,8 +603,8 @@ end
 -- Splits each reagent into buy and farm within a gold budget. Vendor items and
 -- items that cannot be farmed are always bought; the rest is bought in order of
 -- farming minutes saved per copper.
-function ns:Plan(list, budgetGold)
-  local rem = math.max(0, budgetGold or 0) * 10000
+function ns:Plan(list, budgetCopper)
+  local rem = math.max(0, budgetCopper or 0)
   local candidates = {}
   for _, e in ipairs(list) do
     e.buy, e.farm = 0, 0

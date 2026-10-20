@@ -3,7 +3,7 @@ local L, W = ns.L, ns.W
 
 local panel
 local ROW_H = 26
-local MIN_W, MIN_H = 480, 430
+local MIN_W, MIN_H = 640, 470   -- room for the Deals tab columns
 -- Distance of each column's right edge from the row's right edge.
 local COL = { price = 68, pct = 152, margin = 164, ah = 212, qty = 288 }
 local overrides = {}   -- [itemID] = margin typed in the panel this session
@@ -15,8 +15,13 @@ local function marginFor(id)
   return m or ns.db.settings.defaultMargin
 end
 
+-- Margin applies to the lowest price on the Auction House (0% = match the cheapest).
+local function lowest(e)
+  return ns.Price(e.id) or e.unit
+end
+
 local function priceFor(e)
-  return math.max(1, math.floor(e.unit * (1 + marginFor(e.id) / 100) + 0.5))
+  return math.max(1, math.floor(lowest(e) * (1 + marginFor(e.id) / 100) + 0.5))
 end
 
 local function entries()
@@ -142,7 +147,7 @@ end
 
 local function create()
   panel = CreateFrame("Frame", "GarimpoAuctionPanel", UIParent, "BackdropTemplate")
-  panel:SetSize(480, 430)
+  panel:SetSize(MIN_W, MIN_H)
   panel:SetBackdrop({ bgFile = W.FLAT, edgeFile = W.FLAT, edgeSize = 2 })
   panel:SetBackdropColor(unpack(W.C.bg))
   panel:SetBackdropBorderColor(unpack(W.C.edge))
@@ -169,9 +174,39 @@ local function create()
   local close = CreateFrame("Button", nil, panel, "UIPanelCloseButton")
   close:SetPoint("TOPRIGHT", 0, 0)
 
-  local hdr = CreateFrame("Frame", nil, panel)
-  hdr:SetPoint("TOPLEFT", 10, -36)
-  hdr:SetPoint("TOPRIGHT", -34, -36)
+  panel.scanButton = W.Button(panel, "FULL_SCAN", 130, function() ns:FullScan() end)
+  panel.scanButton:SetHeight(20)
+  panel.scanButton:SetPoint("TOPRIGHT", -30, -8)
+  panel.scanStatus = W.Font(panel, 10, W.C.muted, "RIGHT")
+  panel.scanStatus:SetPoint("RIGHT", panel.scanButton, "LEFT", -8, 0)
+  panel.scanStatus:SetPoint("LEFT", title, "RIGHT", 10, 0)
+
+  -- Two tabs: posting your items, and deals to buy.
+  panel.tabs = W.Chips(panel, function(v) panel:SelectTab(v) end, "tab")
+  panel.tabs:SetPoint("TOPLEFT", 10, -34)
+  panel.tabs:SetItems({ { value = "post", key = "AH_TAB_POST" }, { value = "deals", key = "TAB_DEALS" } })
+
+  local post = CreateFrame("Frame", nil, panel)
+  post:SetPoint("TOPLEFT", 0, -64)
+  post:SetPoint("BOTTOMRIGHT")
+  panel.post = post
+
+  panel.deals = ns.BuildDealsView(panel)
+  panel.deals:SetPoint("TOPLEFT", 10, -64)
+  panel.deals:SetPoint("BOTTOMRIGHT", -10, 22)
+  panel.deals:Hide()
+
+  function panel:SelectTab(tab)
+    self.tab = tab
+    self.tabs:Select(tab)
+    self.post:SetShown(tab == "post")
+    self.deals:SetShown(tab == "deals")
+    self:Refresh()
+  end
+
+  local hdr = CreateFrame("Frame", nil, post)
+  hdr:SetPoint("TOPLEFT", 10, 0)
+  hdr:SetPoint("TOPRIGHT", -34, 0)
   hdr:SetHeight(16)
   local function col(key, right, w)
     local fs = W.Font(hdr, 10, W.C.muted, "RIGHT")
@@ -190,8 +225,8 @@ local function create()
   line:SetPoint("BOTTOMLEFT")
   line:SetPoint("BOTTOMRIGHT")
 
-  local sf = CreateFrame("ScrollFrame", nil, panel, "UIPanelScrollFrameTemplate")
-  sf:SetPoint("TOPLEFT", 10, -54)
+  local sf = CreateFrame("ScrollFrame", nil, post, "UIPanelScrollFrameTemplate")
+  sf:SetPoint("TOPLEFT", 10, -18)
   sf:SetPoint("BOTTOMRIGHT", -34, 104)
   local child = CreateFrame("Frame", nil, sf)
   child:SetSize(MIN_W - 44, 1)
@@ -225,22 +260,22 @@ local function create()
     panel:SetSize(math.max(size[1], MIN_W), math.max(size[2], MIN_H))
   end
 
-  panel.empty = W.Font(panel, 12, W.C.muted, "CENTER")
-  panel.empty:SetPoint("TOPLEFT", 20, -90)
-  panel.empty:SetPoint("TOPRIGHT", -20, -90)
+  panel.empty = W.Font(post, 12, W.C.muted, "CENTER")
+  panel.empty:SetPoint("TOPLEFT", 20, -54)
+  panel.empty:SetPoint("TOPRIGHT", -20, -54)
   panel.empty:SetWordWrap(true)
 
-  panel.info = W.Font(panel, 11, W.C.muted)
+  panel.info = W.Font(post, 11, W.C.muted)
   panel.info:SetPoint("BOTTOMLEFT", 10, 80)
   panel.info:SetPoint("RIGHT", -10, 0)
 
-  panel.hold = W.Check(panel, "SHOW_HOLD_ITEMS", function(on)
+  panel.hold = W.Check(post, "SHOW_HOLD_ITEMS", function(on)
     ns.db.settings.showHold = on
     panel:Refresh()
   end)
   panel.hold:SetPoint("BOTTOMLEFT", 8, 54)
 
-  panel.next = CreateFrame("Button", nil, panel, "UIPanelButtonTemplate")
+  panel.next = CreateFrame("Button", nil, post, "UIPanelButtonTemplate")
   panel.next:SetPoint("BOTTOMLEFT", 10, 10)
   panel.next:SetPoint("BOTTOMRIGHT", -10, 10)
   panel.next:SetHeight(38)
@@ -272,7 +307,7 @@ local function create()
       r.icon:SetTexture(ns.ItemIcon(e.id))
       r.name:SetText("|cff" .. ns.ItemQualityHex(e.id) .. ns.ItemName(e.id) .. "|r")
       r.qty:SetText(ns.Num(e.count))
-      r.ah:SetText(ns.Money(e.unit))
+      r.ah:SetText(ns.Money(lowest(e)))
       if not r.margin:HasFocus() then r.margin:SetText(tostring(marginFor(e.id))) end
       r.margin:SetTextColor(overrides[e.id] and 1 or 0.91, overrides[e.id] and 0.82 or 0.88, overrides[e.id] and 0 or 0.82)
       r.price:SetText(ns.Money(priceFor(e)))
@@ -280,16 +315,34 @@ local function create()
     end
     for i = #self.list + 1, #self.rows do self.rows[i]:Hide() end
     self.child:SetHeight(math.max(1, #self.list * ROW_H))
-    self.empty:SetText(#self.list == 0 and (ns.HasAuctionator() and L.AH_NOTHING or L.NO_AUCTIONATOR) or "")
+    self.empty:SetText(#self.list == 0 and (ns.HasPrices() and L.AH_NOTHING or L.NO_PRICES) or "")
+    self.scanStatus:SetText(ns.ScanStatus())
+    local wait = ns:FullScanWait()
+    self.scanButton:SetEnabled(ns.CanScan() and ns.scan.state == "idle" and wait == 0)
+    self.scanButton:SetText(wait > 0 and L.FULL_SCAN_IN:format(ns.Duration(wait / 60 + 0.5)) or L.FULL_SCAN)
     local durations = { "12h", "24h", "48h" }
     self.info:SetText(L.AH_INFO:format(ns.db.settings.defaultMargin, durations[ns.db.settings.duration] or "24h",
       ns.db.settings.bidPercent))
     self.hold:SetChecked(ns.db.settings.showHold)
     self:UpdateNext()
+    if self.deals:IsShown() then self.deals:Refresh() end
   end
 
+  panel.tab = "post"
+  panel.tabs:Select("post")
   panel:Hide()
   return panel
+end
+
+-- Opens the panel on a tab ("post" or "deals"), e.g. from "Search the AH" in Professions.
+function ns:ShowAuctionTab(tab)
+  if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
+  ns:ShowAuctionPanel(true)
+  panel:SelectTab(tab)
+end
+
+function ns:RefreshDeals()
+  if panel and panel:IsShown() and panel.deals:IsShown() then panel.deals:Refresh() end
 end
 
 function ns:ShowAuctionPanel(force)
@@ -329,4 +382,10 @@ end)
 
 ns:On("PRICES", function()
   if panel and panel:IsShown() then panel:Refresh() end
+end)
+
+ns:On("SCAN", function()
+  if panel and panel:IsShown() then
+    ns:Throttle("panel-scan", 0.3, function() panel:Refresh() end)
+  end
 end)

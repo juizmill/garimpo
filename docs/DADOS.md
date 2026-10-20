@@ -2,8 +2,13 @@
 
 ## Preços
 
-- **Casa de Leilão**: lidos do Auctionator pela API pública (`Auctionator.API.v1`). O Garimpo não faz scans.
-- **Histórico**: a cada atualização de preços do Auctionator (e 5 segundos depois de entrar no jogo), o Garimpo guarda o preço do dia dos itens que acompanha: itens das categorias, reagentes das rotas e o que está nas bolsas e no banco. Guarda 35 dias.
+Vêm do scanner próprio (`Scanner.lua`), sem outros addons.
+
+- **Scan completo**: `C_AuctionHouse.ReplicateItems`, permitido pelo jogo uma vez a cada 15 minutos. Os leilões são lidos em blocos de 500 por quadro para não travar o jogo.
+- **Busca rápida**: `C_AuctionHouse.SendSearchQuery`, um item por vez. Traz o número de cada leilão, necessário para comprar.
+- **Por item** (`GarimpoDB.market`): menor preço por unidade, valor de mercado (média dos 15% mais baratos da quantidade à venda, sem contar os seus leilões), quantidade à venda e hora do scan.
+- **Histórico** (`GarimpoDB.prices`): um valor de mercado por dia, por 35 dias. Tendências, sugestões e ofertas usam a média dos 7 dias anteriores.
+- **Ofertas**: leilões até o preço máximo *média de 7 dias × (1 − taxa do Leilão) ÷ (1 + spread)*, com lucro de revenda (mercado × (1 − taxa) − preço pago) acima do lucro mínimo. Os leilões do último scan ficam só na memória; depois de um `/reload` é preciso escanear de novo para ver ofertas.
 - **Vendedores**: preço real de venda tirado do Wowhead (`Data/Vendors.lua`). Para itens sem esse dado, a estimativa é 4 vezes o valor que o vendedor paga.
 
 ## Gold por hora

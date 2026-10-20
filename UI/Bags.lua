@@ -65,7 +65,7 @@ ns:RegisterView("bags", function(parent)
         },
       }
     end
-    list:SetData(data, ns.HasAuctionator() and L.BAGS_EMPTY or L.NO_AUCTIONATOR)
+    list:SetData(data, ns.HasPrices() and L.BAGS_EMPTY or L.NO_PRICES)
     sellJunk:SetEnabled(ns.merchantOpen and totals.junk > 0)
     post:SetEnabled(ns.ahOpen == true)
   end

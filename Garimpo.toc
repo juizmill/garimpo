@@ -2,10 +2,10 @@
 ## Title: Garimpo
 ## Notes: Shows what is making the most gold right now and helps you level professions for less.
 ## Notes-ptBR: Mostra o que está dando mais gold agora e ajuda a upar profissões gastando menos.
-## Version: 0.1.0
+## Version: 0.2.4
 ## SavedVariables: GarimpoDB
 ## SavedVariablesPerCharacter: GarimpoCharDB
-## OptionalDeps: Auctionator, LibStub, LibDataBroker-1.1
+## OptionalDeps: LibStub, LibDataBroker-1.1
 ## IconTexture: Interface\Icons\INV_Misc_Coin_01
 ## X-Credits: Profession routes inspired by the wow-professions.com guides (https://www.wow-professions.com/forever). Vendor locations and prices from Wowhead (https://www.wowhead.com/classic).
 
@@ -16,6 +16,7 @@ Data\Professions.lua
 Data\Vendors.lua
 Data\Nodes.lua
 Analysis.lua
+Scanner.lua
 UI\Widgets.lua
 UI\Main.lua
 UI\Ranking.lua
@@ -25,6 +26,7 @@ UI\Professions.lua
 UI\Config.lua
 UI\AuctionPanel.lua
 UI\Auctions.lua
+UI\Deals.lua
 UI\Tooltip.lua
 UI\Waypoint.lua
 UI\Minimap.lua

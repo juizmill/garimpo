@@ -133,9 +133,10 @@ ns:RegisterView("ranking", function(parent)
   footer:SetPoint("RIGHT", -130, 0)
   footer:SetWordWrap(true)
 
+  -- Full scan when allowed; otherwise a quick search of the tracked items.
   local refresh = W.Button(home, "REFRESH", 120, function()
-    ns:SnapshotPrices()
-    f:Refresh()
+    if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
+    if ns.CanScan() and ns:FullScanWait() == 0 then ns:FullScan() else ns:QuickSearch(ns:TrackedItems()) end
   end)
   refresh:SetPoint("BOTTOMRIGHT", 0, 0)
 
@@ -194,14 +195,12 @@ ns:RegisterView("ranking", function(parent)
     end
     list:SetData(data, L.NO_PRICES)
 
-    local last = ns.db.lastPriceUpdate
-    if not ns.HasAuctionator() then
-      footer:SetText(ns.Color("down", L.NO_AUCTIONATOR))
-    elseif last and last > 0 then
-      footer:SetText(L.LAST_UPDATE:format(ns.Duration((time() - last) / 60)) .. "  " .. L.RANKING_FOOT)
+    if ns.HasPrices() then
+      footer:SetText(ns.ScanStatus() .. "  " .. L.RANKING_FOOT)
     else
-      footer:SetText(L.NO_PRICES)
+      footer:SetText(ns.Color("down", L.NO_PRICES))
     end
+    refresh:SetEnabled(ns.ahOpen == true and ns.scan.state == "idle")
   end
 
   return f

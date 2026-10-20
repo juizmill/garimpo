@@ -13,25 +13,28 @@ Interface em **português e inglês**, com troca na aba Config.
 | **Ranking** | Categorias (minérios, ervas, tecidos, couro, encantamento, pesca, transmog) ordenadas pelo gold por hora estimado, com variação em 24h e o melhor item. Clique numa categoria para ver os itens. |
 | **Bolsas** | Quanto valem suas bolsas, o que vale vender agora, o que segurar e o lixo para o vendedor. |
 | **Leilões** | Tudo que você postou, com tempo para expirar e situação (ativo, vendido, expirado). Toca uma caixa registradora quando algo vende. |
+| **Ofertas** (no painel do Leilão) | Scanner próprio da Casa de Leilão e caçador de ofertas: leilões bem abaixo do valor de mercado, com o lucro de revenda e botão de comprar. |
 | **Gráfico** | Seu gold acumulado em 7, 30 ou 90 dias. |
 | **Profissões** | Rota de cada profissão até o próximo treinador, receita mais barata em cada faixa, plano de comprar ou farmar dentro do seu orçamento, onde farmar e onde comprar. |
 | **Config** | Idioma, margens de preço, som, seta, minimapa e opções de profissão. |
-| **Painel do Leilão** | Abre junto com a Casa de Leilão, lista o que vender com o preço sugerido e posta com um clique por item. |
+| **Painel do Leilão** | Abre junto com a Casa de Leilão, com duas abas: **Postar** (o que vender, com o preço sugerido, um clique por item) e **Ofertas**. |
 | **Seta de navegação** | Aponta para a área de farm, para o vendedor mais próximo ou para seus pontos de coleta, com a distância em jardas. |
 | **Tooltip** | Preço no Leilão, média de 7 dias, tendência e sugestão em qualquer item. |
 
 ## Requisitos
 
 - WoW Forever (cliente `_classic_beta_`).
-- [Auctionator](https://www.curseforge.com/wow/addons/auctionator) ativado no personagem. O Garimpo lê os preços pelos scans do Auctionator e não tem scanner próprio.
+- Nenhum outro addon é obrigatório: o Garimpo tem o próprio scanner da Casa de Leilão.
 - Opcional: qualquer addon que traga o LibDBIcon (BugSack, Questie...) organiza o ícone do minimapa junto com os outros.
 
 ## Instalação
 
 1. Copie a pasta `Garimpo` para `World of Warcraft\_classic_beta_\Interface\AddOns\`.
-2. Na tela de personagens, em **AddOns**, ative **Garimpo** e **Auctionator**.
-3. Entre no jogo, abra a Casa de Leilão e faça um scan com o Auctionator.
+2. Na tela de personagens, em **AddOns**, ative **Garimpo**.
+3. Entre no jogo e abra a Casa de Leilão. O primeiro scan completo começa sozinho (opção na Config).
 4. Digite `/garimpo`.
+
+O jogo permite um scan completo a cada 15 minutos. As sugestões e as ofertas ficam melhores depois de alguns dias de scans, porque comparam o preço de hoje com a média de 7 dias.
 
 Ao atualizar o addon com arquivos **novos** (sons, imagens, dados), feche o jogo e abra de novo.
 O `/reload` só recarrega arquivos que já existiam.
@@ -60,17 +63,15 @@ Seta: arrastar move, botão direito abre o menu para removê-la.
 
 - Rotas de profissão inspiradas nos guias do [wow-professions.com](https://www.wow-professions.com/forever).
 - Locais e preços de vendedores e pontos de nascimento de minérios e ervas: [Wowhead](https://www.wowhead.com/classic) (dados do Classic).
-- Preços da Casa de Leilão: [Auctionator](https://www.curseforge.com/wow/addons/auctionator), pela API pública dele.
-
 ---
 
 ## English
 
-Garimpo is a gold-making addon for **WoW Forever**. It ranks item categories by estimated
-gold per hour from Auction House prices (read from Auctionator), values your bags, tracks
-your auctions with a cash register sound on each sale, charts your gold, and plans
-profession leveling: cheapest recipe per skill range, buy-or-farm within a budget, where
-to farm and where to buy, with an on-screen navigation arrow.
+Garimpo is a gold-making addon for **WoW Forever**. It scans the Auction House on its own,
+ranks item categories by estimated gold per hour, values your bags, finds deals listed well
+below market value (with a buy button), tracks your auctions with a cash register sound on
+each sale, charts your gold, and plans profession leveling: cheapest recipe per skill range,
+buy-or-farm within a budget, where to farm and where to buy, with an on-screen navigation arrow.
 
 Switch the interface language (Automatic, Português, English) in the **Settings** tab.
-Requires Auctionator. Open with `/garimpo`. See the table above for commands.
+No other addon required. Open with `/garimpo`. See the table above for commands.

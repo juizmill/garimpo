@@ -6,7 +6,7 @@ O WoW Forever roda no **motor moderno** do jogo (o mesmo do retail), com conteú
 
 - profissões vêm de `GetProfessions` / `GetProfessionInfo` (não existe `GetSkillLineInfo`);
 - funções de item ficam em `C_Item`; o Garimpo usa `ns.ItemInfo` e `ns.ItemInfoInstant`, que escolhem a função disponível;
-- a Casa de Leilão é a moderna (`C_AuctionHouse.PostItem`, `PostCommodity`, `QueryOwnedAuctions`);
+- a Casa de Leilão é a moderna (`C_AuctionHouse.ReplicateItems`, `SendSearchQuery`, `PostItem`, `PostCommodity`, `PlaceBid`, `StartCommoditiesPurchase`, `QueryOwnedAuctions`);
 - o banco aparece em `Enum.BagIndex`;
 - tooltips usam `TooltipDataProcessor`.
 
@@ -19,16 +19,18 @@ Ordem de carga definida em `Garimpo.toc`:
 | Arquivo | Conteúdo |
 |---|---|
 | `Locales.lua` | Textos em inglês (`enUS`) e português (`ptBR`) e `ns:SetLanguage`. |
-| `Core.lua` | Banco de dados salvo, eventos, utilidades (dinheiro, números, datas), preços do Auctionator, comandos. |
+| `Core.lua` | Banco de dados salvo, eventos, utilidades (dinheiro, números, datas), leitura de preços (`ns.Price`, `ns.Market`, `ns.Quantity`), comandos. |
 | `Data/Items.lua` | Categorias do Ranking com faixas de farm e itens. |
 | `Data/Professions.lua` | Profissões, zonas, reagentes (vendedor, farm, fabricação) e rotas. |
 | `Data/Vendors.lua` | Gerado: vendedores por item. |
 | `Data/Nodes.lua` | Gerado: pontos de nascimento de minérios e ervas. |
-| `Analysis.lua` | Bolsas e banco, histórico de preços, sugestões, Ranking, medição de g/h, cálculo de rotas e plano de compra. |
+| `Analysis.lua` | Bolsas e banco, estatísticas de preço, sugestões, Ranking, medição de g/h, cálculo de rotas e plano de compra. |
+| `Scanner.lua` | Scan completo, busca rápida, valor de mercado e histórico, ofertas e compra. |
 | `UI/Widgets.lua` | Componentes: caixas, botões, chips, listas com rolagem, barras, etiquetas traduzidas. |
 | `UI/Main.lua` | Janela principal e abas. |
-| `UI/Ranking.lua`, `Bags.lua`, `Auctions.lua`, `Chart.lua`, `Professions.lua`, `Config.lua` | Uma aba cada. `Auctions.lua` também acompanha postagens e vendas. |
-| `UI/AuctionPanel.lua` | Painel de postagem ao lado da Casa de Leilão. |
+| `UI/Ranking.lua`, `Bags.lua`, `Auctions.lua`, `Chart.lua`, `Professions.lua`, `Config.lua` | Uma aba cada da janela principal. `Auctions.lua` também acompanha postagens e vendas. |
+| `UI/AuctionPanel.lua` | Painel ao lado da Casa de Leilão, com as abas Postar e Ofertas. |
+| `UI/Deals.lua` | Conteúdo da aba Ofertas do painel (`ns.BuildDealsView`). |
 | `UI/Tooltip.lua` | Linhas no tooltip dos itens. |
 | `UI/Waypoint.lua` | Seta, marcador, pinos no mapa e gravação dos pontos de coleta. |
 | `UI/Minimap.lua` | Ícone do minimapa (LibDBIcon quando disponível) e painel de dados. |
@@ -41,7 +43,9 @@ Ordem de carga definida em `Garimpo.toc`:
 |---|---|
 | `INIT` | Banco de dados pronto (`ADDON_LOADED`). |
 | `READY` | Depois do login. |
-| `PRICES` | Preços do Auctionator atualizados. |
+| `PRICES` | Um scan completo ou uma busca rápida terminou. |
+| `SCAN` | O scanner mudou de estado ou avançou (progresso). |
+| `DEALS` | A lista de ofertas ou o estado de uma compra mudou. |
 | `BAGS` | Bolsas mudaram, vendedor ou Leilão abriu ou fechou. |
 | `MONEY`, `SKILLS`, `ITEMS`, `AUCTIONS`, `LANGUAGE` | Gold, profissões, dados de item, leilões ou idioma mudaram. |
 

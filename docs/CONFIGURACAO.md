@@ -2,6 +2,7 @@
 
 Todas ficam na aba **Config** e são salvas na conta (valem para todos os personagens).
 **Restaurar padrão** volta tudo aos valores abaixo, sem mexer na posição do ícone do minimapa.
+Passe o mouse no **(?)** ao lado de uma opção para ver a explicação.
 
 ## Geral
 
@@ -15,22 +16,32 @@ Todas ficam na aba **Config** e são salvas na conta (valem para todos os person
 
 ## Casa de Leilão
 
+Venda, scan e ofertas ficam juntos nesta seção.
+
 | Opção | Padrão | O que faz |
 |---|---|---|
-| Margem padrão | 0% | Quanto acima do preço atual postar. 0% = preço atual, 100% = dobro, negativo = mais barato. |
-| Margem por categoria | vazio | Substitui a margem padrão naquela categoria. Vazio usa a padrão. |
+| Abrir o painel junto com o Leilão | Ligado | Mostra o painel do Garimpo (Postar e Ofertas) ao abrir a Casa de Leilão. |
+| Scan completo ao abrir o Leilão | Ligado | Começa um scan completo ao abrir a Casa de Leilão, se já passaram 15 minutos do último. |
+| Tipo de Leilão | Facção (5%) | Quanto o Leilão fica de cada venda: Facção (5%) ou Neutro (15%, como Angra do Butim). Vale para o lucro e para as ofertas. |
 | Duração padrão | 24h | 12h, 24h ou 48h. |
-| Lance inicial, % do arremate | 95% | Lance mínimo dos itens que aceitam lance. |
-| Abrir o painel junto com o Leilão | Ligado | Mostra o painel de postagem ao abrir a Casa de Leilão. |
-| Mostrar itens para segurar no painel | Desligado | Inclui itens abaixo da média de 7 dias. |
+| Margem de venda | 0% | Quanto acima do menor preço do Leilão postar. 0% = menor preço, 100% = dobro, negativo = mais barato. |
+| Lance inicial | 95% | Lance dos itens que aceitam lance, em % do arremate. |
+| Ofertas: lucro desejado (spread) | 20% | Lucro sobre o que você paga, já tirando a taxa do Leilão. Preço máximo de compra = *mercado × (1 − taxa) ÷ (1 + spread)*. |
+| Ofertas: lucro mínimo | 1g | Esconde ofertas que renderiam menos que isso no total. Aceita ouro, prata e cobre. |
+| Ofertas: só itens com 2+ dias de histórico | Ligado | Evita ofertas falsas em itens com pouco histórico de preço. |
+| Ofertas: incluir equipamentos | Desligado | Equipamentos variam muito de preço; deixe desligado para menos ofertas falsas. |
+| Mostrar itens para segurar no painel | Desligado | Inclui itens abaixo da média de 7 dias na aba Postar. |
 | Tocar som quando vender | Ligado | Toca o som quando um leilão vende. |
 | Som de venda | Caixa registradora | Caixa registradora ou moedas do jogo. **Testar** toca o som escolhido. |
+| Margem por categoria | vazio | Substitui a margem de venda naquela categoria. Vazio usa a margem de venda. |
+
+Logo abaixo do lucro mínimo, uma linha junta os números em um exemplo e muda na hora: com 20%, Facção e 1g, ela diz que num item de 10g você compra até 7g 92s, vende por 10g, recebe 9g 50s e só aparecem ofertas com lucro de 1g ou mais.
 
 ## Profissões
 
 | Opção | Padrão | O que faz |
 |---|---|---|
-| Orçamento padrão | 20g | Valor inicial do campo "Quanto quer gastar". |
+| Orçamento padrão | 20g | Valor inicial do campo "Quanto quer gastar". Aceita ouro, prata e cobre. |
 | Planejar até | Próximo treinador | Calcula a lista de compras até o próximo treinador ou até o skill 300. |
 | Contar itens do banco | Ligado | Desconta o que está no banco da lista de compras. |
 | Fabricar reagentes quando sair mais barato | Ligado | Considera comprar a matéria-prima e fabricar, quando você tem o skill necessário. |
