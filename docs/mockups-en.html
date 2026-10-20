@@ -1,0 +1,959 @@
+<title>Garimpo (English)</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Archivo+Narrow:wght@400;500;600;700&family=Archivo:wght@400;500&display=swap">
+<style>
+/* Layout: dark "studio" page with the addon windows at real size, each with notes beside it. Single-theme on purpose: it is the game UI. */
+:root{
+  --bg:#0f0d0b;          /* page background */
+  --frame:#17130f;       /* window interior */
+  --frame-2:#211b14;     /* alternating rows / headers */
+  --edge:#6b5530;        /* aged gold border */
+  --gold:#ffd100;        /* WoW title yellow */
+  --ink:#e8e0d0;         /* text */
+  --muted:#9a8f7c;       /* secondary text */
+  --up:#3fd16b; --down:#ff5a4a; --flat:#c9b98f;
+  --q-common:#ffffff; --q-uncommon:#1eff00; --q-rare:#0070dd; --q-epic:#a335ee; --q-poor:#9d9d9d;
+  --c-gold:#e8b923; --c-silver:#c7ccd1; --c-copper:#c4743c;
+  --display:"Cinzel", "Trajan Pro", Georgia, serif;
+  --ui:"Archivo Narrow", "Arial Narrow", Arial, sans-serif;
+  --body:"Archivo", "Segoe UI", system-ui, sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.55;
+  padding-block:40px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));
+  background-image:radial-gradient(ellipse at 50% -10%, #2a2014 0%, transparent 60%);}
+.wrap{max-width:1080px;margin:0 auto;display:flex;flex-direction:column;gap:56px}
+header.intro{display:flex;flex-direction:column;gap:10px;max-width:68ch}
+.eyebrow{font-family:var(--ui);text-transform:uppercase;letter-spacing:.14em;font-size:12px;color:var(--muted)}
+.eyebrow a{color:var(--gold)}
+h1{font-family:var(--display);color:var(--gold);font-size:44px;line-height:1.05;margin:0;text-shadow:0 2px 0 #000;text-wrap:balance}
+.intro p{margin:0;color:var(--ink)}
+.intro p.sub{color:var(--muted)}
+
+section.shot{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:32px;align-items:start}
+@media (max-width:860px){section.shot{grid-template-columns:1fr}}
+.notes{display:flex;flex-direction:column;gap:10px;padding-top:6px}
+.notes h2{font-family:var(--display);font-size:20px;color:var(--gold);margin:0;text-wrap:balance}
+.notes p{margin:0;color:var(--muted);font-size:14px}
+.notes ul{margin:0;padding-left:18px;color:var(--ink);font-size:14px;display:flex;flex-direction:column;gap:4px}
+.stage{overflow-x:auto;padding:4px}
+
+/* ---- WoW-style window ---- */
+.win{position:relative;background:linear-gradient(#1c1712,var(--frame));border:2px solid var(--edge);border-radius:6px;
+  box-shadow:0 0 0 1px #000, inset 0 0 0 1px #000, 0 18px 40px rgba(0,0,0,.6);font-family:var(--ui);font-size:13px;color:var(--ink);
+  width:520px;max-width:100%}
+.titlebar{display:flex;align-items:center;gap:8px;padding:7px 10px;border-bottom:1px solid #000;
+  background:linear-gradient(#2e2516,#1a150e);border-radius:4px 4px 0 0}
+.titlebar .ico{width:22px;height:22px;border:1px solid var(--edge);border-radius:3px;background:radial-gradient(circle at 40% 35%,#ffe37a,#b27a10 60%,#5a3a05);flex:none}
+.titlebar .t{font-family:var(--display);font-weight:700;color:var(--gold);font-size:15px;letter-spacing:.03em;text-shadow:0 1px 0 #000}
+.titlebar .sp{flex:1}
+.xbtn{width:18px;height:18px;border-radius:3px;background:#5c1010;border:1px solid #a33;color:#fdd;font-size:11px;line-height:16px;text-align:center}
+.body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:10px}
+
+.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.kv{background:#0c0a08;border:1px solid #2f2618;border-radius:3px;padding:6px 8px;display:flex;flex-direction:column;gap:1px}
+.kv .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.kv .v{font-size:15px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap}
+
+.money{font-variant-numeric:tabular-nums;white-space:nowrap}
+.money i{display:inline-block;width:9px;height:9px;border-radius:50%;margin:0 3px 0 1px;vertical-align:0;box-shadow:inset 0 -1px 0 rgba(0,0,0,.4)}
+.money .g{background:var(--c-gold)} .money .s{background:var(--c-silver)} .money .c{background:var(--c-copper)}
+
+.tabs{display:flex;gap:2px;border-bottom:1px solid #3a2e1c}
+.tab{padding:5px 12px;border:1px solid #3a2e1c;border-bottom:none;border-radius:4px 4px 0 0;background:#120f0b;color:var(--muted);font-weight:600}
+.tab.on{background:var(--frame-2);color:var(--gold)}
+
+table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+th{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);font-weight:500;text-align:left;padding:4px 6px;border-bottom:1px solid #3a2e1c}
+th.r,td.r{text-align:right}
+td{padding:5px 6px;border-bottom:1px solid #221b12;vertical-align:middle;white-space:nowrap}
+tr:nth-child(even) td{background:rgba(255,255,255,.018)}
+tr.top td{background:rgba(255,209,0,.06)}
+.rank{color:var(--muted);width:18px}
+.cat{display:flex;align-items:center;gap:7px;font-weight:600}
+.sq{width:18px;height:18px;border-radius:2px;border:1px solid #000;flex:none;box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.bar{position:relative;height:8px;width:110px;background:#0b0907;border:1px solid #2c2416;border-radius:2px}
+.bar b{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#8a6a12,var(--gold));border-radius:1px}
+.up{color:var(--up)} .down{color:var(--down)} .flat{color:var(--flat)}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:1px 6px;border-radius:2px;border:1px solid}
+.pill.sell{color:var(--up);border-color:#2a7a43;background:#0e2415}
+.pill.hold{color:var(--gold);border-color:#7a6512;background:#241e08}
+.pill.farm{color:#6cc5ff;border-color:#1f5a80;background:#0b1c28}
+.q-uncommon{color:var(--q-uncommon)} .q-rare{color:var(--q-rare)} .q-epic{color:var(--q-epic)} .q-common{color:var(--q-common)} .q-poor{color:var(--q-poor)}
+.foot{display:flex;justify-content:space-between;align-items:center;gap:8px;color:var(--muted);font-size:11.5px}
+.btn{font-family:var(--ui);font-weight:700;font-size:12px;color:var(--gold);padding:4px 12px;border-radius:3px;border:1px solid #000;
+  background:linear-gradient(#8b1a10,#4d0b06);box-shadow:inset 0 1px 0 rgba(255,255,255,.2);white-space:nowrap}
+.btn.alt{background:linear-gradient(#3a3024,#211a12)}
+.btns{display:flex;gap:6px}
+.spark{display:block}
+
+/* tooltip */
+.tip{width:280px;max-width:100%;background:rgba(6,8,18,.94);border:1px solid #5a6a8a;border-radius:4px;padding:8px 10px;font-family:var(--ui);font-size:13px;
+  box-shadow:0 10px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:2px}
+.tip .name{font-size:14.5px;font-weight:700}
+.tip .row{display:flex;justify-content:space-between;gap:10px}
+.tip .sec{color:#ffd100;margin-top:6px;font-weight:600}
+.tip .dim{color:var(--muted)}
+.pair{display:flex;flex-wrap:wrap;gap:24px;align-items:flex-start}
+
+/* broker bar */
+.broker{display:inline-flex;align-items:center;gap:14px;background:#000;border:1px solid #2c2416;padding:4px 12px;border-radius:3px;font-family:var(--ui);font-size:13px;white-space:nowrap}
+.broker .lbl{color:var(--gold);font-weight:700}
+.sep{color:#3a2e1c}
+
+/* chart */
+.chips{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.chips .lab{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);margin-right:4px}
+.chip{font-family:var(--ui);font-size:12px;font-weight:600;color:var(--muted);background:#120f0b;border:1px solid #3a2e1c;border-radius:3px;padding:3px 9px;cursor:pointer}
+.chip:hover{color:var(--ink);border-color:var(--edge)}
+.chip[aria-pressed="true"]{color:var(--gold);background:var(--frame-2);border-color:var(--edge)}
+.chip:focus-visible,.btn:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
+.ctrls{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px}
+.chartbox{position:relative;background:#0c0a08;border:1px solid #2f2618;border-radius:3px}
+.chartbox svg{display:block;width:100%;height:auto}
+.chartbox text{font-family:var(--ui);font-size:10.5px;fill:var(--muted);font-variant-numeric:tabular-nums}
+.ctip{position:absolute;pointer-events:none;background:rgba(6,8,18,.95);border:1px solid #5a6a8a;border-radius:3px;padding:4px 8px;font-size:12px;white-space:nowrap;transform:translate(-50%,-100%);display:flex;flex-direction:column}
+.ctip .d{color:var(--muted);font-size:11px}
+
+/* auction house */
+.ah{display:flex;flex-wrap:wrap;gap:6px;align-items:flex-start}
+.ahframe{width:230px;max-width:100%;background:#15110c;border:2px solid #4a3c22;border-radius:6px;opacity:.55;font-family:var(--ui);font-size:12px}
+.ahframe .titlebar .t{color:#cdb98a}
+.ahframe .ph{height:12px;border-radius:2px;background:#2a2218;margin:7px 10px}
+.ahframe .ph.s{width:55%}
+.win.dock{width:490px}
+.dock td,.dock th{padding-left:4px;padding-right:4px}
+.dock td:first-child{white-space:normal;width:100%}
+.dock td:last-child{width:1%}
+.btn.post{padding:2px 10px;font-size:11.5px;cursor:pointer}
+.btn.big{display:block;text-align:center;padding:8px 12px;font-size:13.5px}
+.btn.big small{display:block;font-weight:500;color:#f3e3b0;font-size:11px}
+.opt{display:flex;justify-content:space-between;gap:8px;color:var(--muted);font-size:11.5px}
+.opt b{color:var(--ink);font-weight:600}
+.check{display:inline-block;width:11px;height:11px;border:1px solid var(--edge);border-radius:2px;vertical-align:-1px;margin-right:4px;background:#0c0a08;cursor:pointer}
+.check.on{background:var(--gold);box-shadow:inset 0 0 0 2px #0c0a08}
+
+/* markup and settings */
+.pct{display:inline-flex;align-items:center;gap:3px;color:var(--muted)}
+.pct input{width:46px;font-family:var(--ui);font-size:12.5px;color:var(--ink);background:#0c0a08;border:1px solid #3a2e1c;border-radius:2px;padding:2px 4px;text-align:right;font-variant-numeric:tabular-nums;-moz-appearance:textfield}
+.pct input::-webkit-inner-spin-button,.pct input::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+.pct input:focus{outline:none;border-color:var(--gold)}
+.pct input.edited{color:var(--gold)}
+.pct input:disabled{opacity:.5}
+.cfg{display:flex;flex-direction:column;gap:8px}
+.cfg-h{font-family:var(--display);font-weight:700;color:var(--gold);font-size:13px;border-bottom:1px solid #3a2e1c;padding-bottom:3px;margin-top:4px;display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.hint{color:var(--muted);font-size:11.5px;margin:0;font-family:var(--ui);font-weight:400}
+.cfg-row{display:flex;justify-content:space-between;align-items:center;gap:8px;min-height:24px}
+.cfg-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px 28px}
+@media (max-width:480px){.cfg-grid{grid-template-columns:1fr}}
+
+/* item icons */
+.it{display:inline-flex;align-items:center;gap:7px}
+.icon{width:20px;height:20px;flex:none;border:1px solid currentColor;border-radius:2px;box-shadow:0 0 0 1px #000;
+  background:radial-gradient(circle at 50% 40%,#2a2620,#0a0907 80%);display:inline-grid;place-items:center;overflow:hidden}
+.icon svg{width:100%;height:100%;display:block}
+.q-common .icon{border-color:#8a8a8a}
+.tip .it .icon{width:30px;height:30px}
+
+/* professions */
+.parth{font-family:var(--display);color:var(--gold);font-size:32px;margin:0;line-height:1.1;text-shadow:0 2px 0 #000;text-wrap:balance}
+.intro a,.credit a,footer a{color:var(--gold)}
+.skillrow{display:grid;grid-template-columns:96px minmax(0,1fr) auto;align-items:center;gap:10px}
+.skillrow .pn{font-weight:700}
+.skbar{height:10px;background:#0b0907;border:1px solid #2c2416;border-radius:2px;position:relative;overflow:hidden}
+.skbar b{position:absolute;inset:0 auto 0 0;background:linear-gradient(90deg,#1c5a8a,#4fa3e0)}
+.sknum{font-variant-numeric:tabular-nums;font-weight:600}
+td.rc{white-space:normal}
+.qty{color:var(--muted);font-weight:600;margin-right:2px}
+.sub{color:var(--muted);font-size:11.5px;margin-top:2px}
+.alt{color:var(--muted);font-size:11.5px;margin-top:2px;font-style:italic}
+tr.done td{color:var(--muted)}
+tr.done .itm{opacity:.6}
+tr.cur td{background:rgba(255,209,0,.07)}
+tr.trainer td{background:rgba(163,53,238,.07)}
+tr.na td{color:var(--muted);font-style:italic}
+.pill.done{color:var(--muted);border-color:#444}
+.pill.current{color:var(--gold);border-color:#7a6512;background:#241e08}
+.pill.trainer{color:#c9a2ff;border-color:#5a3a80;background:#1c1028}
+.pill.buy,.pill.cheap{color:var(--up);border-color:#2a7a43;background:#0e2415}
+.pill.mixed{color:var(--gold);border-color:#7a6512;background:#241e08}
+.pill.vendor{color:var(--ink);border-color:#555}
+.credit{font-size:11px;color:var(--muted)}
+.secpanel{display:flex;flex-direction:column;gap:10px}
+.now{border:1px solid #7a6512;background:rgba(255,209,0,.06);border-radius:3px;padding:8px 10px;display:flex;flex-direction:column;gap:3px}
+.nowlab{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--gold);font-weight:600}
+.nowmain{font-size:14px;font-weight:700}
+.nowsub{color:var(--muted);font-size:11.5px}
+/* long lists scroll inside the window */
+.scroll{max-height:290px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#6b5530 #0c0a08;border-bottom:1px solid #3a2e1c}
+.scroll::-webkit-scrollbar{width:8px}
+.scroll::-webkit-scrollbar-track{background:#0c0a08}
+.scroll::-webkit-scrollbar-thumb{background:#6b5530;border-radius:4px}
+.scroll th{position:sticky;top:0;z-index:1;background:#1a150f}
+.budget{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.budget label{font-weight:600}
+#budget{width:62px}
+.bigitem{display:flex;flex-direction:column;gap:2px}
+.bigitem .itm{font-size:16px;font-weight:700}
+.bigitem .icon{width:40px;height:40px}
+
+footer{color:var(--muted);font-size:13px;max-width:68ch;border-top:1px solid #2a2218;padding-top:16px}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <symbol id="i-ore" viewBox="0 0 24 24"><polygon points="3,16 6,8 12,4 19,7 21,15 15,21 7,20" fill="var(--a)"/><polygon points="6,8 12,4 19,7 13,10" fill="#fff" opacity=".15"/><polygon points="9,12 12,10 13,13 10,15" fill="var(--b)"/><polygon points="15,13 18,12 17,16" fill="var(--b)"/><polygon points="8,17 10,16 10,18" fill="var(--b)"/></symbol>
+  <symbol id="i-bar" viewBox="0 0 24 24"><polygon points="3,14 8,8 21,8 16,14" fill="var(--b)"/><polygon points="3,14 16,14 16,18 3,18" fill="var(--a)"/><polygon points="16,14 21,8 21,12 16,18" fill="var(--a)" opacity=".7"/></symbol>
+  <symbol id="i-crystal" viewBox="0 0 24 24"><polygon points="12,2 18,9 12,22 6,9" fill="var(--a)"/><polygon points="12,2 14,9 12,22" fill="var(--b)"/><polygon points="6,9 18,9 12,11" fill="#fff" opacity=".25"/></symbol>
+  <symbol id="i-flower" viewBox="0 0 24 24"><g fill="var(--a)"><ellipse cx="12" cy="6" rx="3.5" ry="5"/><ellipse cx="12" cy="18" rx="3.5" ry="5"/><ellipse cx="6" cy="12" rx="5" ry="3.5"/><ellipse cx="18" cy="12" rx="5" ry="3.5"/></g><circle cx="12" cy="12" r="3.2" fill="var(--b)"/></symbol>
+  <symbol id="i-belt" viewBox="0 0 24 24"><rect x="1" y="9" width="22" height="6" rx="1" fill="var(--a)"/><rect x="8" y="7" width="8" height="10" rx="1" fill="none" stroke="var(--b)" stroke-width="2"/><rect x="11" y="10" width="2" height="4" fill="var(--b)"/></symbol>
+  <symbol id="i-cloth" viewBox="0 0 24 24"><rect x="3" y="6" width="15" height="12" fill="var(--a)"/><ellipse cx="18" cy="12" rx="3" ry="6" fill="var(--b)"/><ellipse cx="18" cy="12" rx="1" ry="2" fill="#000" opacity=".4"/><path d="M6 6v12M10 6v12M14 6v12" stroke="#000" stroke-opacity=".2" fill="none"/></symbol>
+  <symbol id="i-hide" viewBox="0 0 24 24"><polygon points="5,4 9,6 15,6 19,4 18,10 21,17 16,16 12,21 8,16 3,17 6,10" fill="var(--a)"/><polygon points="9,8 15,8 16,14 12,17 8,14" fill="var(--b)" opacity=".6"/></symbol>
+  <symbol id="i-helm" viewBox="0 0 24 24"><path d="M4 16 C4 7 20 7 20 16 L20 20 L4 20 Z" fill="var(--a)"/><rect x="7" y="14" width="10" height="2.5" fill="#000" opacity=".6"/><path d="M12 6v6" stroke="var(--b)" stroke-width="2"/></symbol>
+  <symbol id="i-shard" viewBox="0 0 24 24"><polygon points="8,20 5,11 9,4 12,12" fill="var(--a)"/><polygon points="13,21 11,9 16,3 19,12" fill="var(--b)"/><polygon points="16,3 19,12 16,13" fill="#fff" opacity=".35"/></symbol>
+  <symbol id="i-pouch" viewBox="0 0 24 24"><path d="M8 7h8l3 12a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z" fill="var(--a)"/><rect x="8" y="4" width="8" height="3" rx="1" fill="var(--b)"/></symbol>
+  <symbol id="i-bracer" viewBox="0 0 24 24"><rect x="5" y="4" width="14" height="16" rx="3" fill="var(--a)"/><rect x="5" y="8" width="14" height="2" fill="var(--b)"/><rect x="5" y="14" width="14" height="2" fill="var(--b)"/></symbol>
+  <symbol id="i-sword" viewBox="0 0 24 24"><polygon points="18,3 21,3 21,6 10,17 7,14" fill="var(--b)"/><polygon points="5,13 11,19 9.5,20.5 3.5,14.5" fill="var(--a)"/><polygon points="5,17 7,19 4,22 2,20" fill="var(--a)"/></symbol>
+  <symbol id="i-hammer" viewBox="0 0 24 24"><rect x="10.8" y="8" width="2.4" height="14" fill="var(--a)"/><rect x="4" y="3" width="16" height="6" rx="1" fill="var(--b)"/></symbol>
+  <symbol id="i-fish" viewBox="0 0 24 24"><ellipse cx="12" cy="8" rx="5" ry="6" fill="var(--a)"/><path d="M8 13q-2 5 0 8M11 14q-1 4 1 8M13 14q1 4-1 8M16 13q2 5 0 8" stroke="var(--b)" stroke-width="1.6" fill="none"/><circle cx="10" cy="8" r="1.2" fill="#fff"/><circle cx="14" cy="8" r="1.2" fill="#fff"/></symbol>
+</defs></svg>
+
+<div class="wrap">
+
+<header class="intro">
+  <span class="eyebrow">Addon · interface draft · v0.1 · <a href="https://claude.ai/artifact/QCZDzdJXBeQV1UToanpXtN">Versão em português</a></span>
+  <h1>Garimpo</h1>
+  <p>One window that answers one question: what is making the most gold right now? The addon reads Auction House prices (from Auctionator's scans), compares them with the last few days and ranks item categories by estimated profit.</p>
+  <p class="sub">Below are the eleven proposed screens. Values are examples, and the icons are simplified drawings: the addon shows the game's original icons.</p>
+</header>
+
+<!-- 1. Ranking -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="summary">
+          <div class="kv"><span class="k">Current gold</span><span class="v money">4,812<i class="g"></i>37<i class="s"></i>09<i class="c"></i></span></div>
+          <div class="kv"><span class="k">Session (1h 42m)</span><span class="v money up">+318<i class="g"></i>50<i class="s"></i></span></div>
+          <div class="kv"><span class="k">Rate</span><span class="v money">187<i class="g"></i>/h</span></div>
+        </div>
+        <div class="tabs"><span class="tab on">Ranking</span><span class="tab">Bags</span><span class="tab">Chart</span><span class="tab">Professions</span><span class="tab">Settings</span></div>
+        <table>
+          <thead><tr><th></th><th>Category</th><th>Est. profit</th><th class="r">g/h</th><th class="r">24h</th><th>Top item</th></tr></thead>
+          <tbody>
+            <tr class="top"><td class="rank">1</td><td><span class="cat"><span class="sq" style="background:linear-gradient(135deg,#7d8a99,#3a414b)"></span>Ore</span></td><td><span class="bar"><b style="width:100%"></b></span></td><td class="r money">142<i class="g"></i></td><td class="r up">▲ 18%</td><td class="q-common">Thorium Ore</td></tr>
+            <tr><td class="rank">2</td><td><span class="cat"><span class="sq" style="background:linear-gradient(135deg,#6fb04a,#2c5a1e)"></span>Herbs</span></td><td><span class="bar"><b style="width:84%"></b></span></td><td class="r money">119<i class="g"></i></td><td class="r up">▲ 9%</td><td class="q-common">Black Lotus</td></tr>
+            <tr><td class="rank">3</td><td><span class="cat"><span class="sq" style="background:linear-gradient(135deg,#a35ad1,#4b1f6b)"></span>Transmog</span></td><td><span class="bar"><b style="width:71%"></b></span></td><td class="r money">101<i class="g"></i></td><td class="r flat">● 0%</td><td class="q-rare">Shadowcraft Cap</td></tr>
+            <tr><td class="rank">4</td><td><span class="cat"><span class="sq" style="background:linear-gradient(135deg,#d9c79a,#7a6638)"></span>Cloth</span></td><td><span class="bar"><b style="width:52%"></b></span></td><td class="r money">74<i class="g"></i></td><td class="r down">▼ 6%</td><td class="q-common">Runecloth</td></tr>
+            <tr><td class="rank">5</td><td><span class="cat"><span class="sq" style="background:linear-gradient(135deg,#9a6b3e,#4a2f15)"></span>Leather</span></td><td><span class="bar"><b style="width:40%"></b></span></td><td class="r money">57<i class="g"></i></td><td class="r up">▲ 3%</td><td class="q-common">Rugged Leather</td></tr>
+            <tr><td class="rank">6</td><td><span class="cat"><span class="sq" style="background:linear-gradient(135deg,#7ab8e0,#24506e)"></span>Enchanting</span></td><td><span class="bar"><b style="width:33%"></b></span></td><td class="r money">47<i class="g"></i></td><td class="r down">▼ 11%</td><td class="q-rare">Large Brilliant Shard</td></tr>
+            <tr><td class="rank">7</td><td><span class="cat"><span class="sq" style="background:linear-gradient(135deg,#5aa6a0,#1d4b48)"></span>Fishing</span></td><td><span class="bar"><b style="width:21%"></b></span></td><td class="r money">30<i class="g"></i></td><td class="r flat">● 1%</td><td class="q-common">Winter Squid</td></tr>
+          </tbody>
+        </table>
+        <div class="foot"><span>Last Auction House scan: 12 min ago · 18,420 items</span><span class="btns"><span class="btn alt">Refresh</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>1 · Ranking</h2>
+    <p>Main screen, opened with <b>/garimpo</b> or the minimap icon.</p>
+    <ul>
+      <li><b>Est. profit</b> combines average price with how many items actually sell per day.</li>
+      <li><b>g/h</b> is a farming estimate, calibrated from what you gathered in earlier sessions.</li>
+      <li><b>24h</b> shows whether the category's prices are rising or falling.</li>
+      <li>Clicking a row opens the category detail.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 2. Detail -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo · Ore</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <table>
+          <thead><tr><th>Item</th><th class="r">Price</th><th class="r">Sales/day</th><th class="r">7 days</th><th>Advice</th></tr></thead>
+          <tbody>
+            <tr class="top"><td class="q-common">Thorium Ore</td><td class="r money">3<i class="g"></i>40<i class="s"></i></td><td class="r">1,240</td>
+              <td class="r"><svg class="spark" width="64" height="18" viewBox="0 0 64 18"><polyline fill="none" stroke="#3fd16b" stroke-width="1.5" points="1,14 10,13 19,15 28,11 37,10 46,7 55,5 63,3"/><circle cx="63" cy="3" r="2" fill="#3fd16b"/></svg></td><td><span class="pill farm">Farm</span></td></tr>
+            <tr><td class="q-uncommon">Arcane Crystal</td><td class="r money">58<i class="g"></i>00<i class="s"></i></td><td class="r">96</td>
+              <td class="r"><svg class="spark" width="64" height="18" viewBox="0 0 64 18"><polyline fill="none" stroke="#c9b98f" stroke-width="1.5" points="1,9 10,8 19,10 28,9 37,9 46,10 55,8 63,9"/><circle cx="63" cy="9" r="2" fill="#c9b98f"/></svg></td><td><span class="pill hold">Hold</span></td></tr>
+            <tr><td class="q-common">Thorium Bar</td><td class="r money">3<i class="g"></i>95<i class="s"></i></td><td class="r">410</td>
+              <td class="r"><svg class="spark" width="64" height="18" viewBox="0 0 64 18"><polyline fill="none" stroke="#3fd16b" stroke-width="1.5" points="1,13 10,12 19,12 28,10 37,11 46,8 55,7 63,6"/><circle cx="63" cy="6" r="2" fill="#3fd16b"/></svg></td><td><span class="pill sell">Sell</span></td></tr>
+            <tr><td class="q-common">Mithril Ore</td><td class="r money">1<i class="g"></i>12<i class="s"></i></td><td class="r">880</td>
+              <td class="r"><svg class="spark" width="64" height="18" viewBox="0 0 64 18"><polyline fill="none" stroke="#ff5a4a" stroke-width="1.5" points="1,4 10,5 19,6 28,6 37,9 46,10 55,12 63,14"/><circle cx="63" cy="14" r="2" fill="#ff5a4a"/></svg></td><td><span class="pill hold">Hold</span></td></tr>
+            <tr><td class="q-common">Dense Stone</td><td class="r money">0<i class="g"></i>48<i class="s"></i></td><td class="r">530</td>
+              <td class="r"><svg class="spark" width="64" height="18" viewBox="0 0 64 18"><polyline fill="none" stroke="#c9b98f" stroke-width="1.5" points="1,10 10,9 19,10 28,10 37,9 46,10 55,10 63,10"/><circle cx="63" cy="10" r="2" fill="#c9b98f"/></svg></td><td><span class="pill sell">Sell</span></td></tr>
+          </tbody>
+        </table>
+        <div class="foot"><span>Best route: <b style="color:var(--ink)">Silithus / Burning Steppes</b> · ~38 nodes/h</span><span class="btns"><span class="btn alt">‹ Back</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>2 · Category detail</h2>
+    <p>The items that weigh most on the category's profit.</p>
+    <ul>
+      <li><b>Farm</b>: price rising and selling well.</li>
+      <li><b>Sell</b>: price above the 7-day average, a good time to list.</li>
+      <li><b>Hold</b>: price below average, worth keeping in the bank.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 3. Bags -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="summary">
+          <div class="kv"><span class="k">Value in bags</span><span class="v money">1,264<i class="g"></i>80<i class="s"></i></span></div>
+          <div class="kv"><span class="k">Sell now</span><span class="v money up">712<i class="g"></i></span></div>
+          <div class="kv"><span class="k">Vendor trash</span><span class="v money">14<i class="g"></i>22<i class="s"></i></span></div>
+        </div>
+        <div class="tabs"><span class="tab">Ranking</span><span class="tab on">Bags</span><span class="tab">Chart</span><span class="tab">Professions</span><span class="tab">Settings</span></div>
+        <table>
+          <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">Total</th><th class="r">vs. avg</th><th>Action</th></tr></thead>
+          <tbody>
+            <tr><td class="q-common">Black Lotus</td><td class="r">4</td><td class="r money">312<i class="g"></i></td><td class="r up">+22%</td><td><span class="pill sell">Sell</span></td></tr>
+            <tr><td class="q-epic">Faithwoven Belt</td><td class="r">1</td><td class="r money">240<i class="g"></i></td><td class="r flat">+2%</td><td><span class="pill sell">Sell</span></td></tr>
+            <tr><td class="q-uncommon">Arcane Crystal</td><td class="r">3</td><td class="r money">174<i class="g"></i></td><td class="r down">−9%</td><td><span class="pill hold">Hold</span></td></tr>
+            <tr><td class="q-common">Thorium Ore</td><td class="r">60</td><td class="r money">204<i class="g"></i></td><td class="r up">+18%</td><td><span class="pill sell">Sell</span></td></tr>
+            <tr><td class="q-common">Runecloth</td><td class="r">120</td><td class="r money">96<i class="g"></i></td><td class="r down">−6%</td><td><span class="pill hold">Hold</span></td></tr>
+            <tr><td class="q-poor">Ruined Leather Scraps</td><td class="r">7</td><td class="r money">2<i class="g"></i>10<i class="s"></i></td><td class="r flat">—</td><td><span class="pill" style="color:var(--q-poor);border-color:#444">Vendor</span></td></tr>
+          </tbody>
+        </table>
+        <div class="foot"><span>Soulbound items are not counted</span><span class="btns"><span class="btn alt">Sell trash</span><span class="btn">List on AH</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>3 · Bags</h2>
+    <p>The <em>keeping</em> side of gold: what you already carry and what to do with each item.</p>
+    <ul>
+      <li>Adds up the market value of everything in your bags (and bank, once visited).</li>
+      <li>Separates what is worth selling now from what is worth keeping.</li>
+      <li><b>List on AH</b> sends the marked items to Auctionator.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 4. Chart -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="summary">
+          <div class="kv"><span class="k" id="k1">Start of period</span><span class="v money" id="v1"></span></div>
+          <div class="kv"><span class="k">Now</span><span class="v money" id="v2"></span></div>
+          <div class="kv"><span class="k">Change</span><span class="v money" id="v3"></span></div>
+        </div>
+        <div class="tabs"><span class="tab">Ranking</span><span class="tab">Bags</span><span class="tab on">Chart</span><span class="tab">Professions</span><span class="tab">Settings</span></div>
+        <div class="ctrls">
+          <div class="chips"><span class="lab" style="color:var(--gold)">Accumulated gold</span></div>
+          <div class="chips" id="rangeChips">
+            <button class="chip" id="r-7" data-r="7" aria-pressed="false">7 days</button>
+            <button class="chip" id="r-30" data-r="30" aria-pressed="true">30 days</button>
+          </div>
+        </div>
+        <div class="chartbox" id="chartbox">
+          <svg id="chart" viewBox="0 0 496 210" role="img" aria-label="Gold over time"></svg>
+          <div class="ctip" id="ctip" hidden></div>
+        </div>
+        <div class="foot"><span>Character's total gold, recorded on logout and every hour</span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>4 · Chart</h2>
+    <p>Accumulated gold over time. This example works: change the period and hover over the line.</p>
+    <ul>
+      <li>Each point is how much gold you had that day.</li>
+      <li>A rising line means you are saving gold. A drop shows a day of spending.</li>
+      <li>At the top: what you had at the start of the period, what you have now and the difference.</li>
+      <li>Data is saved in the addon itself, per character.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 5. Auction House -->
+<section class="shot">
+  <div class="stage">
+    <div class="ah">
+      <div class="ahframe" aria-hidden="true">
+        <div class="titlebar"><span class="t">Auction House</span></div>
+        <div style="padding:6px 0 10px"><div class="ph"></div><div class="ph s"></div><div class="ph"></div><div class="ph"></div><div class="ph s"></div><div class="ph"></div><div class="ph"></div><div class="ph s"></div><div class="ph"></div><div class="ph"></div></div>
+      </div>
+      <div class="win dock">
+        <div class="titlebar"><span class="ico"></span><span class="t">Garimpo · Post</span><span class="sp"></span><span class="xbtn">✕</span></div>
+        <div class="body">
+          <table>
+            <thead><tr><th>Item</th><th class="r">Qty</th><th class="r">AH</th><th class="r">Markup</th><th class="r">Your price</th><th></th></tr></thead>
+            <tbody id="postRows">
+              <tr data-base="780000" data-cat="erv" data-name="Black Lotus" data-qty="4 units"><td class="q-common">Black Lotus</td><td class="r">4</td><td class="r money base">78<i class="g"></i></td><td class="r"><span class="pct"><input type="number" id="pct-0" step="1" min="-90" value="10" aria-label="Markup Black Lotus">%</span></td><td class="r money price">85<i class="g"></i>80<i class="s"></i></td><td class="r"><button class="btn post">Post</button></td></tr>
+              <tr data-base="2400000" data-cat="tmg" data-name="Faithwoven Belt" data-qty="1 unit"><td class="q-epic">Faithwoven Belt</td><td class="r">1</td><td class="r money base">240<i class="g"></i></td><td class="r"><span class="pct"><input type="number" id="pct-1" step="1" min="-90" value="25" aria-label="Markup Faithwoven Belt">%</span></td><td class="r money price">300<i class="g"></i></td><td class="r"><button class="btn post">Post</button></td></tr>
+              <tr data-base="34000" data-cat="min" data-name="Thorium Ore" data-qty="3 stacks of 20"><td class="q-common">Thorium Ore</td><td class="r">3×20</td><td class="r money base">3<i class="g"></i>40<i class="s"></i></td><td class="r"><span class="pct"><input type="number" id="pct-2" step="1" min="-90" value="0" aria-label="Markup Thorium Ore">%</span></td><td class="r money price">3<i class="g"></i>40<i class="s"></i></td><td class="r"><button class="btn post">Post</button></td></tr>
+            </tbody>
+          </table>
+          <div class="opt"><span>Default markup: <b id="ahDef">0%</b> · change it in Settings</span><span>Duration: <b id="ahDur">24h</b></span></div>
+          <div class="opt"><span><span class="check"></span>Show items to hold</span><span>Deposit: <b class="money">1<i class="g"></i>84<i class="s"></i></b></span></div>
+          <button class="btn big" id="postNext">Post next<small id="postNextName">Black Lotus · 4 units at 85g 80s</small></button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>5 · At the Auction House</h2>
+    <p>When you open the auctioneer, this panel docks beside the Auction House window.</p>
+    <ul>
+      <li>It lists only items marked <b>Sell</b>, with the suggested price filled in.</li>
+      <li><b>Post</b> on each row, or <b>Post next</b> to work down the list. Try the buttons in the example.</li>
+      <li>The game requires one click per post, so the addon can't post everything at once.</li>
+      <li><b>Markup</b>: how far above the current AH price you want to sell. 0% is the current price, 100% is double (1g becomes 2g). Negative values sell cheaper.</li>
+      <li>Each item starts with its category's markup, set in Settings. Change the number in the example and watch the price update.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 6. Settings -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="tabs"><span class="tab">Ranking</span><span class="tab">Bags</span><span class="tab">Chart</span><span class="tab">Professions</span><span class="tab on">Settings</span></div>
+        <div class="cfg">
+          <div class="cfg-h">Posting price</div>
+          <div class="cfg-row"><label for="cfg-def">Default markup</label><span class="pct"><input type="number" id="cfg-def" step="1" min="-90" value="0">%</span></div>
+          <p class="hint">0% posts at the current AH price. 100% posts at double. Negative values sell cheaper.</p>
+          <div class="cfg-h">Markup by category <span class="hint">empty uses the default markup</span></div>
+          <div class="cfg-grid">
+            <div class="cfg-row"><label for="cfg-min">Ore</label><span class="pct"><input type="number" id="cfg-min" step="1" min="-90">%</span></div>
+            <div class="cfg-row"><label for="cfg-erv">Herbs</label><span class="pct"><input type="number" id="cfg-erv" step="1" min="-90" value="10">%</span></div>
+            <div class="cfg-row"><label for="cfg-tmg">Transmog</label><span class="pct"><input type="number" id="cfg-tmg" step="1" min="-90" value="25">%</span></div>
+            <div class="cfg-row"><label for="cfg-tec">Cloth</label><span class="pct"><input type="number" id="cfg-tec" step="1" min="-90">%</span></div>
+            <div class="cfg-row"><label for="cfg-cou">Leather</label><span class="pct"><input type="number" id="cfg-cou" step="1" min="-90">%</span></div>
+            <div class="cfg-row"><label for="cfg-enc">Enchanting</label><span class="pct"><input type="number" id="cfg-enc" step="1" min="-90">%</span></div>
+            <div class="cfg-row"><label for="cfg-pes">Fishing</label><span class="pct"><input type="number" id="cfg-pes" step="1" min="-90">%</span></div>
+            <div class="cfg-row"><label for="cfg-out">Other</label><span class="pct"><input type="number" id="cfg-out" step="1" min="-90">%</span></div>
+          </div>
+          <div class="cfg-h">Auction House</div>
+          <div class="cfg-row"><span>Default duration</span><div class="chips" id="durChips"><button class="chip" id="d-12" data-d="12h" aria-pressed="false">12h</button><button class="chip" id="d-24" data-d="24h" aria-pressed="true">24h</button><button class="chip" id="d-48" data-d="48h" aria-pressed="false">48h</button></div></div>
+          <div class="cfg-row"><span><span class="check on"></span>Open the panel with the Auction House</span></div>
+          <div class="cfg-row"><span><span class="check"></span>Show items to hold in the panel</span></div>
+        </div>
+        <div class="foot"><span>Saved per character</span><span class="btns"><button class="btn alt" id="cfgReset">Restore defaults</button></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>6 · Settings</h2>
+    <p>The default values used by the Auction House panel.</p>
+    <ul>
+      <li><b>Default markup</b> applies to every item. 0% is the current AH price.</li>
+      <li><b>Markup by category</b> replaces the default for that category only. In this example, Herbs post 10% higher and Transmog 25% higher.</li>
+      <li>Changing a value here updates the panel on screen 5, except rows you already edited by hand.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 7. Tooltip + bar -->
+<section class="shot">
+  <div class="stage">
+    <div class="pair">
+      <div class="tip">
+        <span class="name">Thorium Ore</span>
+        <span class="dim">Trade Goods</span>
+        <span class="sec">Garimpo</span>
+        <span class="row"><span>AH (min.)</span><span class="money">3<i class="g"></i>40<i class="s"></i></span></span>
+        <span class="row"><span>7-day average</span><span class="money">2<i class="g"></i>88<i class="s"></i></span></span>
+        <span class="row"><span>Sales/day</span><span>1,240</span></span>
+        <span class="row"><span>Trend</span><span class="up">▲ rising · Sell</span></span>
+        <span class="row"><span>Ranking</span><span>#1 Ore</span></span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px">
+        <span class="broker"><span class="lbl">Garimpo</span><span class="money">4,812<i class="g"></i></span><span class="sep">|</span><span class="money up">+187<i class="g"></i>/h</span><span class="sep">|</span><span>Top: <b style="color:#c7ccd1">Ore</b></span></span>
+        <span class="eyebrow">Compact bar (minimap or data panel)</span>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>7 · Tooltip and compact bar</h2>
+    <p>For players who don't want to open any window.</p>
+    <ul>
+      <li>Hovering any item adds price, average, sales and the suggested action to its tooltip.</li>
+      <li>The bar shows current gold, session rate and the top category right now.</li>
+    </ul>
+  </div>
+</section>
+
+<header class="intro">
+  <span class="eyebrow">Integration · Professions</span>
+  <h2 class="parth">Professions</h2>
+  <p>Helps you level professions for less gold. It shows the cheapest recipe route at today's prices, decides what to buy and what to farm based on how much gold you want to spend, and shows where to farm each reagent.</p>
+  <p class="sub">Routes inspired by the <a href="https://www.wow-professions.com/forever">wow-professions.com</a> guides for WoW Forever. Example with Blacksmithing at skill 112.</p>
+</header>
+
+<!-- 8. Primary professions -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="tabs"><span class="tab">Ranking</span><span class="tab">Bags</span><span class="tab">Chart</span><span class="tab on">Professions</span><span class="tab">Settings</span></div>
+        <div class="chips" id="priChips">
+          <button class="chip" id="pc-fe" data-p="fe" aria-pressed="true">Blacksmithing</button>
+          <button class="chip" id="pc-mi" data-p="mi" aria-pressed="false">Mining</button>
+        </div>
+        <div class="secpanel" id="pri-fe">
+          <div class="skillrow"><span class="pn">Blacksmithing</span><span class="skbar"><b style="width:74.7%"></b></span><span class="sknum">112 / 150</span></div>
+          <div class="now"><span class="nowlab">Leveling now</span><div class="nowmain"><span class="qty">13×</span> <span class="itm q-uncommon">Patterned Bronze Bracers</span></div><div class="nowsub">Skill 112 → 125 · ~12 crafts left · next: 24× Bronze Shortsword</div></div>
+          <div class="summary">
+            <div class="kv"><span class="k">To 150</span><span class="v">38 points</span></div>
+            <div class="kv"><span class="k">Buying everything</span><span class="v money">57<i class="g"></i>31<i class="s"></i></span></div>
+            <div class="kv"><span class="k">Your plan</span><span class="v money" id="planSum"></span></div>
+          </div>
+          <table>
+            <thead><tr><th>Skill</th><th>Recipe</th><th class="r">Cost</th><th></th></tr></thead>
+            <tbody>
+              <tr class="done"><td>1–100</td><td class="rc">6 steps completed</td><td class="r">—</td><td><span class="pill done">Done</span></td></tr>
+              <tr class="done"><td>100–112</td><td class="rc"><span class="qty">20×</span> <span class="itm q-common">Heavy Grinding Stone</span><div class="sub">Keep all 20 for 175</div></td><td class="r">—</td><td><span class="pill done">Done</span></td></tr>
+              <tr class="cur"><td>112–125</td><td class="rc"><span class="qty">13×</span> <span class="itm q-uncommon">Patterned Bronze Bracers</span><div class="sub">65 Bronze Bar · 26 Coarse Grinding Stone · ~12 left</div></td><td class="r money">17<i class="g"></i>81<i class="s"></i></td><td><span class="pill current">Current</span></td></tr>
+              <tr><td>125–140</td><td class="rc"><span class="qty">24×</span> <span class="itm q-common">Bronze Shortsword</span><div class="sub">120 Bronze Bar · 96 Weak Flux · 48 Medium Leather</div></td><td class="r money">33<i class="g"></i>36<i class="s"></i></td><td></td></tr>
+              <tr><td>140–150</td><td class="rc"><span class="qty">10×</span> <span class="itm q-common">Bronze Warhammer</span><div class="sub">80 Bronze Bar · 10 Strong Flux · 10 Medium Leather</div></td><td class="r money">18<i class="g"></i>50<i class="s"></i></td><td></td></tr>
+              <tr class="trainer"><td>150</td><td class="rc">Expert trainer<div class="sub">Saru Steelfury (Orgrimmar) · Bengus Deepforge (Ironforge) · level 20</div></td><td class="r money">50<i class="s"></i></td><td><span class="pill trainer">Train</span></td></tr>
+              <tr><td>150–165</td><td class="rc"><span class="qty">19×</span> <span class="itm q-common">Bronze Warhammer</span><div class="sub">152 Bronze Bar · 19 Strong Flux · 19 Medium Leather</div></td><td class="r money">35<i class="g"></i>15<i class="s"></i></td><td></td></tr>
+              <tr><td>165–175</td><td class="rc"><span class="qty">15×</span> <span class="itm q-uncommon">Green Iron Bracers</span><div class="sub">90 Iron Bar · 15 Green Dye</div></td><td class="r money">54<i class="g"></i>30<i class="s"></i></td><td></td></tr>
+              <tr><td>175–185</td><td class="rc"><span class="qty">10×</span> <span class="itm q-uncommon">Golden Scale Bracers</span><div class="sub">50 Steel Bar · 20 Heavy Grinding Stone (kept)</div></td><td class="r money">60<i class="g"></i></td><td></td></tr>
+              <tr><td>185–215</td><td class="rc"><span class="qty">36×</span> <span class="itm q-uncommon">Mithril Plate Pants</span><div class="sub">432 Mithril Bar</div><div class="alt">Alternative: Steel Breastplate + Steel Plate Helm · ~610g (more expensive today)</div></td><td class="r money">475<i class="g"></i>20<i class="s"></i></td><td><span class="pill cheap">Cheapest</span></td></tr>
+              <tr><td>215–225</td><td class="rc"><span class="qty">10×</span> <span class="itm q-uncommon">Heavy Mithril Breastplate</span><div class="sub">160 Mithril Bar</div></td><td class="r money">176<i class="g"></i></td><td></td></tr>
+              <tr class="na"><td>225–300</td><td class="rc">The guide doesn't cover this range on Forever yet (beta)</td><td class="r">—</td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="foot"><span class="credit">Route inspired by <a href="https://www.wow-professions.com/forever/blacksmithing-leveling-guide">wow-professions.com</a></span><span class="btns"><span class="btn">View reagents</span></span></div>
+        </div>
+
+        <div class="secpanel" id="pri-mi" hidden>
+          <div class="skillrow"><span class="pn">Mining</span><span class="skbar"><b style="width:73.3%"></b></span><span class="sknum">165 / 225</span></div>
+          <div class="now"><span class="nowlab">Leveling now</span><div class="nowmain">Iron and Gold Ore · Arathi Highlands</div><div class="nowsub">Skill 165 → 175 · next: Mithril from 175</div></div>
+          <div class="summary">
+            <div class="kv"><span class="k">To 225</span><span class="v">60 points</span></div>
+            <div class="kv"><span class="k">Cost</span><span class="v money">0<i class="g"></i></span></div>
+            <div class="kv"><span class="k">Ore along the way</span><span class="v money up">~95<i class="g"></i></span></div>
+          </div>
+          <table>
+            <thead><tr><th>Skill</th><th>Where to mine</th><th class="r">Unit value</th><th></th></tr></thead>
+            <tbody>
+              <tr class="done"><td>1–65</td><td class="rc">Copper · starting zone</td><td class="r">—</td><td><span class="pill done">Done</span></td></tr>
+              <tr class="done"><td>65–125</td><td class="rc">Tin and Silver · The Barrens, Redridge Mountains</td><td class="r">—</td><td><span class="pill done">Done</span></td></tr>
+              <tr class="cur"><td>125–175</td><td class="rc"><span class="itm q-common">Iron Ore</span><div class="sub">Arathi Highlands, Thousand Needles, Desolace</div><div class="alt">At 165 you can already smelt Steel Bars. Blacksmithing will need 50 at 175.</div></td><td class="r money">45<i class="s"></i></td><td><span class="pill current">Current</span></td></tr>
+              <tr><td>175–245</td><td class="rc"><span class="itm q-common">Mithril Ore</span><div class="sub">Swamp of Sorrows, Tanaris</div></td><td class="r money">1<i class="g"></i>12<i class="s"></i></td><td></td></tr>
+              <tr class="trainer"><td>225</td><td class="rc">Artisan trainer<div class="sub">level 35</div></td><td class="r">—</td><td><span class="pill trainer">Train</span></td></tr>
+              <tr><td>245–300</td><td class="rc"><span class="itm q-common">Thorium Ore</span><div class="sub">Un'Goro Crater, Silithus, Burning Steppes</div></td><td class="r money">3<i class="g"></i>40<i class="s"></i></td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="foot"><span>Mining uses no reagents. The value of the ore you gather shows in the Ranking and Bags tabs.</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>8 · Primary professions</h2>
+    <p>Step by step from your current skill to the max, with each step's cost at today's prices.</p>
+    <ul>
+      <li>One button per primary profession, same as the secondary ones. The example works.</li>
+      <li>The <b>Leveling now</b> box shows the current recipe, how many crafts are left and what comes next.</li>
+      <li>When there is an alternative recipe, Garimpo compares both at AH prices and marks the <b>cheapest</b>.</li>
+      <li>It tells you when to visit the trainer, with name, city and required level.</li>
+      <li>On Forever recipes turn grey 25 points earlier than in Classic, so the route is specific to Forever.</li>
+      <li><b>Mining</b> shows where to mine at each range and tells you when it unlocks something for Blacksmithing.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 9. Buy or farm -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo · Blacksmithing to 150</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="summary">
+          <div class="kv"><span class="k">Your gold</span><span class="v money">4,812<i class="g"></i></span></div>
+          <div class="kv"><span class="k">Plan: spend</span><span class="v money" id="pGold"></span></div>
+          <div class="kv"><span class="k">Plan: farm</span><span class="v" id="pTime"></span></div>
+        </div>
+        <div class="budget">
+          <span><label for="budget">How much to spend</label> <span class="pct"><input type="number" id="budget" step="1" min="0" value="20">g</span></span>
+          <span class="chips"><button class="chip" id="bud-0" data-b="0">Farm everything</button><button class="chip" id="bud-all" data-b="all">Buy everything</button></span>
+        </div>
+        <table>
+          <thead><tr><th>Reagent</th><th class="r">Needed</th><th class="r">Unit price</th><th class="r">Buy</th><th class="r">Farm</th><th>Decision</th></tr></thead>
+          <tbody id="planRows">
+            <tr data-i="0"><td class="q-common">Bronze Bar</td><td class="r">225</td><td class="r money">21<i class="s"></i></td><td class="r b"></td><td class="r f"></td><td class="dec"></td></tr>
+            <tr data-i="1"><td class="q-common">Medium Leather</td><td class="r">38</td><td class="r money">15<i class="s"></i></td><td class="r b"></td><td class="r f"></td><td class="dec"></td></tr>
+            <tr data-i="2"><td class="q-common">Coarse Stone</td><td class="r">40</td><td class="r money">8<i class="s"></i></td><td class="r b"></td><td class="r f"></td><td class="dec"></td></tr>
+            <tr data-i="3"><td class="q-common">Weak Flux</td><td class="r">96</td><td class="r money">1<i class="s"></i></td><td class="r b"></td><td class="r f"></td><td class="dec"></td></tr>
+            <tr data-i="4"><td class="q-common">Strong Flux</td><td class="r">10</td><td class="r money">2<i class="s"></i></td><td class="r b"></td><td class="r f"></td><td class="dec"></td></tr>
+          </tbody>
+        </table>
+        <div class="foot"><span id="cmpLine"></span><span class="btns"><span class="btn">Search the AH</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>9 · Buy or farm</h2>
+    <p>The shopping list up to the next trainer, minus what is already in your bags and bank.</p>
+    <ul>
+      <li>Type how much gold you want to spend. Garimpo first buys what saves the most farming time per gold and sends you to farm the rest.</li>
+      <li>Vendor items (the fluxes) are always bought.</li>
+      <li><b>Farm everything</b> and <b>Buy everything</b> show the two extremes. Try the field in the example.</li>
+      <li><b>Search the AH</b> opens an Auctionator search with the items marked to buy.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 10. Where to farm -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo · Reagent</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="bigitem"><span class="itm q-common">Bronze Bar</span><span class="hint">225 needed · 1 Copper Bar + 1 Tin Bar make 2 Bronze Bars (Mining 50)</span></div>
+        <div class="cfg-h">Buy or make</div>
+        <table>
+          <thead><tr><th>Option</th><th class="r">Cost (225)</th><th class="r">Time</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Buy Bronze Bars</td><td class="r money">101<i class="g"></i>25<i class="s"></i></td><td class="r">—</td><td></td></tr>
+            <tr class="top"><td>Buy ore and smelt</td><td class="r money">47<i class="g"></i>25<i class="s"></i></td><td class="r">~5 min</td><td><span class="pill cheap">Cheapest</span></td></tr>
+            <tr><td>Farm the ore</td><td class="r money">0<i class="g"></i></td><td class="r">~2h30</td><td></td></tr>
+          </tbody>
+        </table>
+        <div class="cfg-h">Where to farm</div>
+        <table>
+          <thead><tr><th>Zone</th><th class="r">Level</th><th>Ore</th><th class="r">Nodes/h</th><th>Faction</th></tr></thead>
+          <tbody>
+            <tr class="top"><td>Hillsbrad Foothills</td><td class="r">20–30</td><td>Tin, Silver</td><td class="r">~35</td><td>Both</td></tr>
+            <tr><td>Redridge Mountains</td><td class="r">15–25</td><td>Copper, Tin</td><td class="r">~32</td><td>Alliance</td></tr>
+            <tr><td>Wetlands</td><td class="r">20–30</td><td>Copper, Tin</td><td class="r">~30</td><td>Alliance</td></tr>
+            <tr><td>The Barrens</td><td class="r">10–25</td><td>Copper, Tin</td><td class="r">~28</td><td>Horde</td></tr>
+          </tbody>
+        </table>
+        <div class="foot"><span class="credit">Locations inspired by <a href="https://www.wow-professions.com/forever">wow-professions.com</a></span><span class="btns"><span class="btn alt">Mark on map</span><span class="btn">Search ore</span></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>10 · Where to farm</h2>
+    <p>Opens when you click a reagent on screen 9.</p>
+    <ul>
+      <li>Compares three paths: buy it ready, buy the raw material and craft it, or farm it.</li>
+      <li>Here, buying ore and smelting costs half as much as buying Bronze Bars. The plan on screen 9 already uses that price.</li>
+      <li><b>Where to farm</b> lists zones with level, ore and nodes per hour. The best zone for your faction comes first.</li>
+      <li><b>Mark on map</b> places a waypoint on the game map.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- 11. Secondary professions -->
+<section class="shot">
+  <div class="stage">
+    <div class="win">
+      <div class="titlebar"><span class="ico"></span><span class="t">Garimpo · Secondary</span><span class="sp"></span><span class="xbtn">✕</span></div>
+      <div class="body">
+        <div class="tabs"><span class="tab">Ranking</span><span class="tab">Bags</span><span class="tab">Chart</span><span class="tab on">Professions</span><span class="tab">Settings</span></div>
+        <div class="chips" id="secChips">
+          <button class="chip" id="sc-ps" data-p="ps" aria-pressed="true">First Aid</button>
+          <button class="chip" id="sc-cu" data-p="cu" aria-pressed="false">Cooking</button>
+          <button class="chip" id="sc-pe" data-p="pe" aria-pressed="false">Fishing</button>
+        </div>
+
+        <div class="secpanel" id="sec-ps">
+          <div class="skillrow"><span class="pn">First Aid</span><span class="skbar"><b style="width:93.3%"></b></span><span class="sknum">140 / 150</span></div>
+          <div class="summary">
+            <div class="kv"><span class="k">To 225</span><span class="v">85 points</span></div>
+            <div class="kv"><span class="k">Buying everything</span><span class="v money">40<i class="g"></i>30<i class="s"></i></span></div>
+            <div class="kv"><span class="k">Farming</span><span class="v">~1h50</span></div>
+          </div>
+          <table>
+            <thead><tr><th>Skill</th><th>Recipe</th><th class="r">Cost</th><th></th></tr></thead>
+            <tbody>
+              <tr class="cur"><td>115–150</td><td class="rc"><span class="qty">50×</span> <span class="itm q-common">Heavy Wool Bandage</span><div class="sub">100 Wool Cloth · ~10 left (20 cloth)</div></td><td class="r money">2<i class="g"></i></td><td><span class="pill current">Current</span></td></tr>
+              <tr class="trainer"><td>150</td><td class="rc">Book: Expert First Aid - Under Wraps<div class="sub">Learn Silk Bandage from the trainer first. Book from Deneb Walker (Arathi Highlands) or Balai Lok'Wein (Dustwallow Marsh), or the AH</div></td><td class="r money">1<i class="g"></i></td><td><span class="pill trainer">Book</span></td></tr>
+              <tr><td>150–180</td><td class="rc"><span class="qty">42×</span> <span class="itm q-common">Silk Bandage</span><div class="sub">42 Silk Cloth</div></td><td class="r money">10<i class="g"></i>50<i class="s"></i></td><td></td></tr>
+              <tr><td>180–210</td><td class="rc"><span class="qty">46×</span> <span class="itm q-common">Heavy Silk Bandage</span><div class="sub">92 Silk Cloth · needs the manual</div></td><td class="r money">23<i class="g"></i></td><td></td></tr>
+              <tr><td>210–225</td><td class="rc"><span class="qty">17×</span> <span class="itm q-common">Mageweave Bandage</span><div class="sub">17 Mageweave Cloth</div><div class="alt">If the AH has no Mageweave: 42 Heavy Silk Bandages (84 Silk Cloth)</div></td><td class="r money">6<i class="g"></i>80<i class="s"></i></td><td><span class="pill cheap">Cheapest</span></td></tr>
+            </tbody>
+          </table>
+          <div class="foot"><span>Silk Cloth drops from humanoids level 25–35. On Forever, First Aid also makes healing potions.</span></div>
+        </div>
+
+        <div class="secpanel" id="sec-cu" hidden>
+          <div class="skillrow"><span class="pn">Cooking</span><span class="skbar"><b style="width:63.3%"></b></span><span class="sknum">95 / 150</span></div>
+          <div class="summary">
+            <div class="kv"><span class="k">To 225</span><span class="v">130 points</span></div>
+            <div class="kv"><span class="k">Buying everything</span><span class="v money">31<i class="g"></i>40<i class="s"></i></span></div>
+            <div class="kv"><span class="k">With your Fishing</span><span class="v money up">18<i class="g"></i>90<i class="s"></i></span></div>
+          </div>
+          <table>
+            <thead><tr><th>Skill</th><th>Recipe</th><th class="r">Cost</th><th></th></tr></thead>
+            <tbody>
+              <tr class="cur"><td>50–100</td><td class="rc"><span class="qty">55×</span> <span class="itm q-common">Coyote Steak</span><div class="sub">55 Coyote Meat · ~6 left</div><div class="alt">Cheaper than Boiled Clams (3g 80s) and Smoked Bear Meat (3g 75s)</div></td><td class="r money">2<i class="g"></i>20<i class="s"></i></td><td><span class="pill current">Current</span></td></tr>
+              <tr><td>100–130</td><td class="rc"><span class="qty">35×</span> <span class="itm q-common">Dry Pork Ribs</span><div class="sub">35 Boar Ribs · 35 Mild Spices (vendor)</div></td><td class="r money">2<i class="g"></i>80<i class="s"></i></td><td><span class="pill cheap">Cheapest</span></td></tr>
+              <tr><td>130–150</td><td class="rc"><span class="qty">25×</span> <span class="itm q-common">Hot Lion Chops</span><div class="sub">25 Lion Meat · 25 Hot Spices (vendor)</div></td><td class="r money">3<i class="g"></i>10<i class="s"></i></td><td></td></tr>
+              <tr class="trainer"><td>150</td><td class="rc">Expert Cookbook<div class="sub">Wulan (Desolace, Horde) or Shandrina (Ashenvale, Alliance) · requires 125</div></td><td class="r money">1<i class="g"></i></td><td><span class="pill trainer">Book</span></td></tr>
+              <tr><td>150–175</td><td class="rc"><span class="qty">25×</span> <span class="itm q-common">Hot Lion Chops</span><div class="sub">25 Lion Meat · 25 Hot Spices</div></td><td class="r money">3<i class="g"></i>10<i class="s"></i></td><td></td></tr>
+              <tr><td>175–225</td><td class="rc"><span class="qty">50×</span> <span class="itm q-common">Mithril Headed Trout</span><div class="sub">50 Raw Mithril Head Trout · your Fishing 162 already catches it</div></td><td class="r money">12<i class="g"></i>50<i class="s"></i></td><td><span class="pill farm">Fish</span></td></tr>
+            </tbody>
+          </table>
+          <div class="foot"><span>Campfire: the Basic Campfire Kit uses Simple Wood and Flint and Tinder, sold near the trainer.</span></div>
+        </div>
+
+        <div class="secpanel" id="sec-pe" hidden>
+          <div class="skillrow"><span class="pn">Fishing</span><span class="skbar"><b style="width:72%"></b></span><span class="sknum">162 / 225</span></div>
+          <div class="summary">
+            <div class="kv"><span class="k">To 225</span><span class="v">63 points</span></div>
+            <div class="kv"><span class="k">Cost</span><span class="v money">2<i class="g"></i>40<i class="s"></i></span></div>
+            <div class="kv"><span class="k">Fish along the way</span><span class="v money up">~34<i class="g"></i></span></div>
+          </div>
+          <table>
+            <thead><tr><th>Skill</th><th>Where to fish</th><th class="r">Cost</th><th></th></tr></thead>
+            <tbody>
+              <tr class="done"><td>1–75</td><td class="rc">Starting zone · Shiny Bauble</td><td class="r">—</td><td><span class="pill done">Done</span></td></tr>
+              <tr class="done"><td>75–150</td><td class="rc">Capital city, The Barrens or Darkshore · Nightcrawlers if fish escape</td><td class="r">—</td><td><span class="pill done">Done</span></td></tr>
+              <tr class="done"><td>150</td><td class="rc">Book "The Bass and You" · Old Man Heming (Booty Bay)</td><td class="r">—</td><td><span class="pill done">Done</span></td></tr>
+              <tr class="cur"><td>150–225</td><td class="rc">Dustwallow Marsh with Bright Baubles<div class="sub">Alternatives: Arathi Highlands, Desolace, Stranglethorn Vale · fish from here feed Cooking 175–225</div></td><td class="r money">2<i class="g"></i>40<i class="s"></i></td><td><span class="pill current">Current</span></td></tr>
+              <tr class="trainer"><td>225</td><td class="rc">Nat Pagle quest (level 35)<div class="sub">One quest fish each from Feralas, Swamp of Sorrows, Desolace and Stranglethorn Vale</div></td><td class="r">—</td><td><span class="pill trainer">Quest</span></td></tr>
+              <tr class="na"><td>225–300</td><td class="rc">Feralas, Tanaris, Un'Goro Crater · with Bright Baubles (untested on beta)</td><td class="r">—</td><td></td></tr>
+            </tbody>
+          </table>
+          <div class="foot"><span>Fish you catch along the way and their AH value show in the Bags tab.</span></div>
+        </div>
+
+        <div class="foot"><span class="credit">Routes inspired by <a href="https://www.wow-professions.com/forever">wow-professions.com</a></span></div>
+      </div>
+    </div>
+  </div>
+  <div class="notes">
+    <h2>11 · Secondary professions</h2>
+    <p>First Aid, Cooking and Fishing don't take a profession slot, so every character can level all three.</p>
+    <ul>
+      <li>Switch between the three at the top of the window. The example works.</li>
+      <li><b>Cooking</b> picks the cheapest recipe for each range and uses what you fish. With Fishing, the cost drops from 31g to 19g.</li>
+      <li><b>Fishing</b> has no reagents. It shows where to fish, the lure, the book and the quest for each range, and what the fish you catch are worth.</li>
+      <li><b>First Aid</b> uses cloth, so it goes into the same buy-or-farm calculation as screen 9.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>Data: Garimpo uses the Auction House scans Auctionator already stores, with no scanner of its own. The 7-day history and g/h are saved per character in the addon's SavedVariables. Profession routes are inspired by the <a href="https://www.wow-professions.com/forever">wow-professions.com</a> guides, credited in the addon.</footer>
+</div>
+
+<script>
+(function(){
+  // Example series, 30 days ending on Oct 20
+  function rng(seed){return function(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646;}}
+  function walk(seed,end,drift,noise){
+    var r=rng(seed),v=[end];
+    for(var i=1;i<30;i++){v.unshift(Math.max(1,v[0]-drift-(r()-.5)*noise));}
+    return v.map(function(x){return Math.round(x);});
+  }
+  var data=walk(7,4812,62,260),range=30;
+  var svg=document.getElementById("chart"),tip=document.getElementById("ctip");
+  var W=496,H=210,L=46,R=14,T=14,B=26;
+  var NS="http://www.w3.org/2000/svg";
+  function el(n,a){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);return e;}
+  function fmt(n){return n.toLocaleString("en-US");}
+  function day(i,n){var d=new Date(2026,9,20-(n-1-i));return (d.getMonth()+1)+"/"+d.getDate();}
+  function nice(min,max){
+    var span=max-min||1,raw=span/4,p=Math.pow(10,Math.floor(Math.log10(raw))),m=raw/p;
+    var step=(m<=1?1:m<=2?2:m<=2.5?2.5:m<=5?5:10)*p;
+    return {lo:Math.floor(min/step)*step,hi:Math.ceil(max/step)*step,step:step};
+  }
+  function coin(n){return fmt(n)+'<i class="g"></i>';}
+  function draw(){
+    var d=data.slice(30-range),n=d.length;
+    var sc=nice(Math.min.apply(null,d),Math.max.apply(null,d));
+    var x=function(i){return L+i*(W-L-R)/(n-1);},y=function(v){return T+(sc.hi-v)*(H-T-B)/(sc.hi-sc.lo);};
+    while(svg.firstChild)svg.removeChild(svg.firstChild);
+    var defs=el("defs",{}),g=el("linearGradient",{id:"af",x1:0,y1:0,x2:0,y2:1});
+    g.appendChild(el("stop",{offset:"0","stop-color":"#ffd100","stop-opacity":".28"}));
+    g.appendChild(el("stop",{offset:"1","stop-color":"#ffd100","stop-opacity":"0"}));
+    defs.appendChild(g);svg.appendChild(defs);
+    for(var v=sc.lo;v<=sc.hi+1e-9;v+=sc.step){
+      svg.appendChild(el("line",{x1:L,x2:W-R,y1:y(v),y2:y(v),stroke:"#2a2218","stroke-width":1}));
+      var t=el("text",{x:L-6,y:y(v)+3.5,"text-anchor":"end"});t.textContent=fmt(Math.round(v));svg.appendChild(t);
+    }
+    var every=range===7?1:5;
+    for(var i=n-1;i>=0;i-=every){var tx=el("text",{x:x(i),y:H-8,"text-anchor":i===n-1?"end":"middle"});tx.textContent=day(i,n);svg.appendChild(tx);}
+    var pts=d.map(function(v,i){return x(i).toFixed(1)+","+y(v).toFixed(1);});
+    svg.appendChild(el("path",{d:"M"+pts.join("L")+"L"+x(n-1)+","+y(sc.lo)+"L"+x(0)+","+y(sc.lo)+"Z",fill:"url(#af)"}));
+    svg.appendChild(el("polyline",{points:pts.join(" "),fill:"none",stroke:"#ffd100","stroke-width":2,"stroke-linejoin":"round"}));
+    svg.appendChild(el("circle",{cx:x(n-1),cy:y(d[n-1]),r:4,fill:"#ffd100",stroke:"#0c0a08","stroke-width":2}));
+    var cross=el("line",{y1:T,y2:H-B,stroke:"#9a8f7c","stroke-width":1,"stroke-dasharray":"3 3",visibility:"hidden"});
+    var dot=el("circle",{r:4,fill:"#ffd100",stroke:"#0c0a08","stroke-width":2,visibility:"hidden"});
+    svg.appendChild(cross);svg.appendChild(dot);
+    var hit=el("rect",{x:L,y:T,width:W-L-R,height:H-T-B,fill:"transparent"});svg.appendChild(hit);
+    hit.addEventListener("pointermove",function(e){
+      var r=svg.getBoundingClientRect(),px=(e.clientX-r.left)*W/r.width;
+      var i=Math.max(0,Math.min(n-1,Math.round((px-L)/((W-L-R)/(n-1)))));
+      cross.setAttribute("x1",x(i));cross.setAttribute("x2",x(i));cross.setAttribute("visibility","visible");
+      dot.setAttribute("cx",x(i));dot.setAttribute("cy",y(d[i]));dot.setAttribute("visibility","visible");
+      tip.innerHTML='<span class="d">'+day(i,n)+'</span><span class="money">'+coin(d[i])+'</span>';
+      tip.style.left=(x(i)*r.width/W)+"px";tip.style.top=(y(d[i])*r.height/H-8)+"px";tip.hidden=false;
+    });
+    hit.addEventListener("pointerleave",function(){cross.setAttribute("visibility","hidden");dot.setAttribute("visibility","hidden");tip.hidden=true;});
+    var diff=d[n-1]-d[0],pct=Math.round(diff/d[0]*100);
+    document.getElementById("k1").textContent=range+" days ago";
+    document.getElementById("v1").innerHTML=coin(d[0]);
+    document.getElementById("v2").innerHTML=coin(d[n-1]);
+    var v3=document.getElementById("v3");
+    v3.innerHTML=(diff>=0?"+":"−")+coin(Math.abs(diff))+' <span style="font-size:12px">('+(diff>=0?"+":"−")+Math.abs(pct)+'%)</span>';
+    v3.className="v money "+(diff>=0?"up":"down");
+    svg.setAttribute("aria-label","Accumulated gold, last "+range+" days");
+  }
+  var rbs=document.querySelectorAll("#rangeChips .chip");
+  rbs.forEach(function(b){b.addEventListener("click",function(){
+    rbs.forEach(function(o){o.setAttribute("aria-pressed",o===b?"true":"false");});range=+b.dataset.r;draw();
+  });});
+  draw();
+
+  // Item icons: [symbol, main color, highlight color]
+  var IC={
+    "Thorium Ore":["ore","#56624f","#9fd27a"],"Arcane Crystal":["crystal","#9b4fd6","#e6b8ff"],
+    "Thorium Bar":["bar","#5f7a55","#a9c99a"],"Mithril Ore":["ore","#5d6873","#d6e4ef"],
+    "Dense Stone":["ore","#7a6c56","#b9a888"],"Black Lotus":["flower","#3e2358","#c9a2ff"],
+    "Faithwoven Belt":["belt","#6b3fa0","#ffd36a"],"Runecloth":["cloth","#7d5f8c","#d7c3e3"],
+    "Ruined Leather Scraps":["hide","#5c4e3d","#8f7a5f"],"Shadowcraft Cap":["helm","#35587f","#a9c4e6"],
+    "Large Brilliant Shard":["shard","#3f8fd0","#cfeeff"],"Rugged Leather":["hide","#7d5129","#c08a52"],
+    "Winter Squid":["fish","#2f3d6b","#8fa3e0"],
+    "Bronze Bar":["bar","#8a5a2e","#d49a5a"],"Coarse Stone":["ore","#6b6458","#a39a88"],
+    "Medium Leather":["hide","#7a5634","#b07d4c"],"Weak Flux":["pouch","#6b6a60","#c9c4b0"],
+    "Strong Flux":["pouch","#4f5a6b","#b8c6d9"],"Heavy Grinding Stone":["ore","#5a5550","#8a847a"],
+    "Patterned Bronze Bracers":["bracer","#8a5a2e","#d49a5a"],"Bronze Shortsword":["sword","#8a5a2e","#d9b38a"],
+    "Bronze Warhammer":["hammer","#5c3f22","#c08a52"],"Green Iron Bracers":["bracer","#3f6b3a","#9fd27a"],
+    "Golden Scale Bracers":["bracer","#8a6a12","#ffd36a"],"Mithril Plate Pants":["bracer","#5d6873","#d6e4ef"],
+    "Heavy Mithril Breastplate":["helm","#5d6873","#d6e4ef"],"Iron Ore":["ore","#6b5a4e","#c98a6a"],
+    "Heavy Wool Bandage":["cloth","#9a8a6a","#e6dcc0"],"Silk Bandage":["cloth","#a890b8","#f0e6f6"],
+    "Heavy Silk Bandage":["cloth","#8a6fa0","#e6d6f0"],"Mageweave Bandage":["cloth","#6b4f9a","#d7c3e3"],
+    "Coyote Steak":["hide","#8a3a2a","#d9846a"],"Dry Pork Ribs":["hide","#7a3a2a","#c9785a"],
+    "Hot Lion Chops":["hide","#9a4a20","#e0a060"],"Mithril Headed Trout":["fish","#4f5f73","#d6e4ef"]
+  };
+  document.querySelectorAll('td[class^="q-"], .tip .name, span.itm').forEach(function(n){
+    var name=n.textContent.trim(),c=IC[name];if(!c)return;
+    n.innerHTML='<span class="it"><span class="icon" style="--a:'+c[1]+';--b:'+c[2]+'"><svg viewBox="0 0 24 24"><use href="#i-'+c[0]+'"/></svg></span><span>'+name+'</span></span>';
+  });
+
+  // Example posting
+  // price in copper: 1g = 100s = 10,000c
+  function parts(c){return [Math.floor(c/10000),Math.floor(c%10000/100),c%100];}
+  function money(c){var p=parts(c),h="";
+    if(p[0])h+=fmt(p[0])+'<i class="g"></i>';if(p[1]||!p[0])h+=p[1]+'<i class="s"></i>';if(p[2])h+=p[2]+'<i class="c"></i>';return h;}
+  function plain(c){var p=parts(c),t=[];if(p[0])t.push(fmt(p[0])+"g");if(p[1])t.push(p[1]+"s");if(p[2])t.push(p[2]+"c");return t.join(" ")||"0c";}
+  var rows=[].slice.call(document.querySelectorAll("#postRows tr")),next=document.getElementById("postNext"),nm=document.getElementById("postNextName");
+  var cfgDef=document.getElementById("cfg-def");
+  function pctNum(v){var n=parseFloat(v);return isNaN(n)?0:Math.max(-90,n);}
+  function defFor(cat){var c=document.getElementById("cfg-"+cat);return pctNum(c&&c.value!==""?c.value:cfgDef.value);}
+  function priceOf(tr){return Math.max(1,Math.round(+tr.dataset.base*(1+pctNum(tr.querySelector("input").value)/100)));}
+  function isOpen(tr){return !tr.querySelector(".post").disabled;}
+  function paint(tr){tr.querySelector(".price").innerHTML=money(priceOf(tr));}
+  function post(tr){
+    var b=tr.querySelector(".post");if(b.disabled)return;
+    b.disabled=true;b.textContent="Posted";b.className="pill sell";tr.querySelector("input").disabled=true;tr.style.opacity=".55";refresh();
+  }
+  function refresh(){
+    var r=rows.find(isOpen);
+    if(!r){next.firstChild.textContent="All posted";nm.textContent="Nothing left to sell";next.disabled=true;}
+    else nm.textContent=r.dataset.name+" · "+r.dataset.qty+" at "+plain(priceOf(r));
+  }
+  function applyDefaults(){
+    rows.forEach(function(tr){var i=tr.querySelector("input");if(!i.classList.contains("edited")&&!i.disabled){i.value=defFor(tr.dataset.cat);paint(tr);}});
+    document.getElementById("ahDef").textContent=pctNum(cfgDef.value)+"%";refresh();
+  }
+  rows.forEach(function(tr){
+    var i=tr.querySelector("input");
+    i.addEventListener("input",function(){i.classList.add("edited");paint(tr);refresh();});
+    tr.querySelector(".post").addEventListener("click",function(){post(tr);});
+  });
+  next.addEventListener("click",function(){var r=rows.find(isOpen);if(r)post(r);});
+
+  // Settings
+  var catInputs=[].slice.call(document.querySelectorAll(".cfg-grid input"));
+  function syncPh(){catInputs.forEach(function(i){i.placeholder=pctNum(cfgDef.value);});}
+  [cfgDef].concat(catInputs).forEach(function(i){i.addEventListener("input",function(){syncPh();applyDefaults();});});
+  var durs=document.querySelectorAll("#durChips .chip");
+  function setDur(d){durs.forEach(function(b){b.setAttribute("aria-pressed",b.dataset.d===d?"true":"false");});document.getElementById("ahDur").textContent=d;}
+  durs.forEach(function(b){b.addEventListener("click",function(){setDur(b.dataset.d);});});
+  document.querySelectorAll(".cfg .check").forEach(function(c){c.addEventListener("click",function(){c.classList.toggle("on");});});
+  document.getElementById("cfgReset").addEventListener("click",function(){
+    cfgDef.value=0;catInputs.forEach(function(i){i.value="";});setDur("24h");
+    rows.forEach(function(tr){tr.querySelector("input").classList.remove("edited");});
+    syncPh();applyDefaults();
+  });
+  syncPh();applyDefaults();
+
+  // Professions: buy vs farm within the budget (prices in copper, minutes to farm everything missing)
+  var RG=[
+    {miss:225,price:2100,min:150},
+    {miss:38,price:1500,min:40},
+    {miss:40,price:800,min:15},
+    {miss:96,price:100,vendor:true},
+    {miss:10,price:200,vendor:true}
+  ];
+  var allCost=RG.reduce(function(s,r){return s+r.miss*r.price;},0);
+  var allTime=RG.reduce(function(s,r){return s+(r.min||0);},0);
+  function hm(m){m=Math.round(m);var h=Math.floor(m/60),mm=m%60;return h?h+"h"+(mm<10?"0":"")+mm:mm+" min";}
+  function plan(bg){
+    var rem=Math.round(Math.max(0,bg)*10000),res=RG.map(function(){return {buy:0,farm:0};});
+    RG.forEach(function(r,i){if(r.vendor){res[i].buy=r.miss;rem-=r.miss*r.price;}});
+    RG.map(function(r,i){return i;}).filter(function(i){return !RG[i].vendor;})
+      .sort(function(a,b){return RG[b].min/(RG[b].miss*RG[b].price)-RG[a].min/(RG[a].miss*RG[a].price);})
+      .forEach(function(i){var r=RG[i],k=Math.max(0,Math.min(r.miss,Math.floor(rem/r.price)));res[i].buy=k;res[i].farm=r.miss-k;rem-=k*r.price;});
+    return res;
+  }
+  var bIn=document.getElementById("budget");
+  function renderPlan(){
+    var bg=parseFloat(bIn.value);if(isNaN(bg))bg=0;
+    var res=plan(bg),gold=0,time=0;
+    document.querySelectorAll("#planRows tr").forEach(function(tr){
+      var i=+tr.dataset.i,r=RG[i],p=res[i];
+      gold+=p.buy*r.price;if(!r.vendor)time+=p.farm/r.miss*r.min;
+      tr.querySelector(".b").textContent=p.buy||"—";
+      tr.querySelector(".f").textContent=p.farm||"—";
+      var cls,txt;
+      if(r.vendor){cls="vendor";txt="Vendor";}
+      else if(!p.farm){cls="buy";txt="Buy";}
+      else if(!p.buy){cls="farm";txt="Farm";}
+      else{cls="mixed";txt="Mixed";}
+      tr.querySelector(".dec").innerHTML='<span class="pill '+cls+'">'+txt+'</span>';
+    });
+    document.getElementById("pGold").innerHTML=money(gold);
+    document.getElementById("pTime").textContent=time<1?"none":hm(time);
+    document.getElementById("planSum").innerHTML=money(gold)+' <span style="font-size:12px;color:var(--muted)">+ '+(time<1?"0 min":hm(time))+'</span>';
+    document.getElementById("cmpLine").textContent="Buy everything: "+plain(allCost)+" · Farm everything: ~"+hm(allTime);
+  }
+  bIn.addEventListener("input",renderPlan);
+  document.querySelectorAll(".budget .chip").forEach(function(b){b.addEventListener("click",function(){
+    bIn.value=b.dataset.b==="all"?Math.ceil(allCost/10000):0;renderPlan();
+  });});
+  renderPlan();
+
+  // Window tables get a scrollbar once they pass the max height
+  document.querySelectorAll(".win table").forEach(function(t){
+    var w=document.createElement("div");w.className="scroll";t.parentNode.insertBefore(w,t);w.appendChild(t);
+  });
+
+  // Profession panels
+  function panels(chipsId,prefix){
+    var cs=document.querySelectorAll("#"+chipsId+" .chip");
+    cs.forEach(function(b){b.addEventListener("click",function(){
+      cs.forEach(function(o){o.setAttribute("aria-pressed",o===b?"true":"false");document.getElementById(prefix+o.dataset.p).hidden=o!==b;});
+    });});
+  }
+  panels("secChips","sec-");
+  panels("priChips","pri-");
+})();
+</script>
