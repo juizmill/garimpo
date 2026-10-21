@@ -95,6 +95,7 @@ local function buildDetail(parent, onBack)
           ageText(r.age),
           adviceText(r.advice),
         },
+        sort = { ns.ItemName(r.id), r.price, r.diff, r.change, r.age, r.advice },
         tone = r.id == row.item and "top" or nil,
       }
     end
@@ -180,6 +181,7 @@ ns:RegisterView("ranking", function(parent)
           ns.Pct(r.change),
           r.item and ("|cff" .. ns.ItemQualityHex(r.item) .. ns.ItemName(r.item) .. "|r") or ns.Color("muted", "-"),
         },
+        sort = { i, ns.T(cat.name), r.gph, r.gph, r.change, r.item and ns.ItemName(r.item) },
         icon = r.item and ns.ItemIcon(r.item) or nil,
         iconCol = 6,
         swatch = cat.color,

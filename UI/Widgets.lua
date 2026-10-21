@@ -265,7 +265,7 @@ local PILLS = {
   current = { "gold", "PILL_CURRENT" }, train = { "purple", "PILL_TRAIN" }, book = { "purple", "PILL_BOOK" },
   quest = { "purple", "PILL_QUEST" }, cheapest = { "up", "PILL_CHEAPEST" }, posted = { "up", "PILL_POSTED" },
   active = { "blue", "PILL_ACTIVE" }, sold = { "up", "PILL_SOLD" }, expired = { "down", "PILL_EXPIRED" },
-  ended = { "muted", "PILL_ENDED" },
+  ended = { "muted", "PILL_ENDED" }, bought = { "gold", "PILL_BOUGHT" },
 }
 
 function W.Pill(kind)
@@ -274,9 +274,77 @@ function W.Pill(kind)
   return ns.Color(p[1], L[p[2]]:upper())
 end
 
+-- Sorts rows in place by value(row). Numbers and text compare naturally, missing values
+-- go last, and ties keep their previous order.
+function W.SortRows(rows, value, asc)
+  local index = {}
+  for i, r in ipairs(rows) do index[r] = i end
+  table.sort(rows, function(a, b)
+    local va, vb = value(a), value(b)
+    if va == nil or vb == nil then
+      if va == vb then return index[a] < index[b] end
+      return vb == nil
+    end
+    if type(va) ~= type(vb) then va, vb = tostring(va), tostring(vb) end
+    if type(va) == "string" then va, vb = va:lower(), vb:lower() end
+    if va == vb then return index[a] < index[b] end
+    if asc then return va < vb end
+    return va > vb
+  end)
+end
+
+-- Clickable column title; the sorted column shows ^ (ascending) or v (descending).
+function W.SortHeader(parent, key, width, justify, onClick)
+  local b = CreateFrame("Button", nil, parent)
+  b:SetSize(width, 18)
+  b.text = W.Font(b, 10, W.C.muted, justify)
+  b.text:SetAllPoints()
+  b.key = key
+  W.Label(b.text, key)
+  b:SetScript("OnClick", onClick)
+  b:SetScript("OnEnter", function(self) self.text:SetTextColor(W.C.ink[1], W.C.ink[2], W.C.ink[3]) end)
+  b:SetScript("OnLeave", function(self) self:SetArrow(self.dir) end)
+  function b:SetArrow(dir)
+    self.dir = dir
+    local c = dir and W.C.gold or W.C.muted
+    self.text:SetTextColor(c[1], c[2], c[3])
+    self.text:SetText(L[self.key] .. (dir == "asc" and " ^" or (dir == "desc" and " v" or "")))
+  end
+  return b
+end
+
+-- Sorting state for lists built by hand: click a title once to sort (text A-Z, numbers
+-- high to low), again to reverse. textCols = { [col] = true } for text columns.
+function W.Sorter(onChange, textCols)
+  local s = { headers = {}, textCols = textCols or {} }
+  function s:Add(button, col)
+    button.col = col
+    self.headers[#self.headers + 1] = button
+    button:SetScript("OnClick", function() s:Toggle(col) end)
+  end
+  function s:Toggle(col)
+    if self.col == col then
+      self.asc = not self.asc
+    else
+      self.col, self.asc = col, self.textCols[col] == true
+    end
+    self:Paint()
+    onChange()
+  end
+  function s:Paint()
+    for _, h in ipairs(self.headers) do
+      h:SetArrow(h.col == self.col and (self.asc and "asc" or "desc") or nil)
+    end
+  end
+  return s
+end
+
 -- Scrolling table. cols = { { width = n, justify = "LEFT", header = "KEY", wrap = bool, bar = bool, size = n } }
--- Data rows: { cells = { ... }, icon = texture, iconCol = n, link = itemLink, itemID = id,
---   tip = { lines }, onClick = fn, tone = "current"|"done"|"mile"|"top", colors = { [col] = color } }
+-- Data rows: { cells = { ... }, sort = { value per column }, icon = texture, iconCol = n,
+--   link = itemLink, itemID = id, tip = { lines }, extra = { lines after the item tooltip },
+--   onClick = fn, check = bool, onCheck = fn,
+--   tone = "current"|"done"|"mile"|"top", colors = { [col] = color } }
+-- Rows with `sort` values can be sorted by clicking the column titles.
 function W.List(parent, cols, rowHeight)
   local list = CreateFrame("Frame", nil, parent)
   list.cols, list.rowHeight, list.rows = cols, rowHeight or 20, {}
@@ -285,16 +353,27 @@ function W.List(parent, cols, rowHeight)
   list.header:SetPoint("TOPLEFT")
   list.header:SetPoint("TOPRIGHT")
   list.header:SetHeight(18)
+  list.headers = {}
   local x = 4
-  for _, c in ipairs(cols) do
+  for i, c in ipairs(cols) do
     c.x = x
-    if c.header then
-      local fs = W.Font(list.header, 10, W.C.muted, c.justify)
-      fs:SetPoint("LEFT", list.header, "LEFT", x, 0)
-      fs:SetWidth(c.width)
-      W.Label(fs, c.header)
+    if c.header and c.header ~= "" then
+      local h = W.SortHeader(list.header, c.header, c.width, c.justify, function() list:SortBy(i) end)
+      h:SetPoint("LEFT", list.header, "LEFT", x, 0)
+      list.headers[i] = h
     end
     x = x + c.width + 6
+  end
+
+  function list:SortBy(col)
+    local first = self.lastData and self.lastData[1]
+    if not (first and first.sort) then return end
+    if self.sortCol == col then
+      self.sortAsc = not self.sortAsc
+    else
+      self.sortCol, self.sortAsc = col, type(first.sort[col]) == "string"
+    end
+    self:SetData(self.lastData, self.lastEmpty)
   end
   local line = W.Line(list.header)
   line:SetPoint("BOTTOMLEFT")
@@ -356,6 +435,10 @@ function W.List(parent, cols, rowHeight)
       if d.link or d.itemID then
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         GameTooltip:SetHyperlink(d.link or ("item:" .. d.itemID))
+        if d.extra then
+          GameTooltip:AddLine(" ")
+          for _, line2 in ipairs(d.extra) do GameTooltip:AddLine(line2, 1, 1, 1, true) end
+        end
         GameTooltip:Show()
       elseif d.tip then
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
@@ -369,6 +452,9 @@ function W.List(parent, cols, rowHeight)
     r:SetScript("OnClick", function(self)
       if self.data and self.data.onClick then self.data.onClick(self.data) end
     end)
+    r:SetScript("OnDoubleClick", function(self)
+      if self.data and self.data.onDoubleClick then self.data.onDoubleClick(self.data) end
+    end)
     return r
   end
 
@@ -377,6 +463,17 @@ function W.List(parent, cols, rowHeight)
   }
 
   function list:SetData(data, emptyText)
+    self.lastData, self.lastEmpty = data, emptyText
+    if self.sortCol and data[1] and data[1].sort then
+      local sorted = {}
+      for i, d in ipairs(data) do sorted[i] = d end
+      local col = self.sortCol
+      W.SortRows(sorted, function(d) return d.sort and d.sort[col] end, self.sortAsc)
+      data = sorted
+    end
+    for i, h in pairs(self.headers) do
+      h:SetArrow(i == self.sortCol and (self.sortAsc and "asc" or "desc") or nil)
+    end
     for i, d in ipairs(data) do
       local r = self.rows[i] or makeRow(i)
       self.rows[i] = r
@@ -396,20 +493,40 @@ function W.List(parent, cols, rowHeight)
       local col = self.cols[ic]
       local fs = r.cells[ic]
       local anchor, yoff = col.wrap and "TOPLEFT" or "LEFT", col.wrap and -3 or 0
+      -- Optional checkbox before the icon: d.check = true/false, d.onCheck(d, checked).
+      local x0 = col.x
+      if d.check ~= nil then
+        if not r.check then
+          r.check = CreateFrame("CheckButton", nil, r, "UICheckButtonTemplate")
+          r.check:SetSize(20, 20)
+          r.check:SetScript("OnClick", function(self)
+            local rd = self:GetParent().data
+            if rd and rd.onCheck then rd.onCheck(rd, self:GetChecked() and true or false) end
+          end)
+        end
+        r.check:ClearAllPoints()
+        r.check:SetPoint(anchor, r, anchor, col.x - 2, yoff)
+        r.check:SetChecked(d.check)
+        r.check:Show()
+        x0 = col.x + 20
+      elseif r.check then
+        r.check:Hide()
+      end
+      local used = x0 - col.x
       if d.icon then
         r.icon:SetTexture(d.icon)
         r.icon:ClearAllPoints()
-        r.icon:SetPoint(anchor, r, anchor, col.x, yoff)
+        r.icon:SetPoint(anchor, r, anchor, x0, yoff)
         r.icon:SetDesaturated(d.tone == "done")
         r.icon:Show()
         fs:ClearAllPoints()
-        fs:SetPoint(anchor, r, anchor, col.x + 20, yoff)
-        fs:SetWidth(col.width - 20)
+        fs:SetPoint(anchor, r, anchor, x0 + 20, yoff)
+        fs:SetWidth(col.width - used - 20)
       else
         r.icon:Hide()
         fs:ClearAllPoints()
-        fs:SetPoint(anchor, r, anchor, col.x, yoff)
-        fs:SetWidth(col.width)
+        fs:SetPoint(anchor, r, anchor, x0, yoff)
+        fs:SetWidth(col.width - used)
       end
       -- Optional color square before the text of another column (category colors).
       if d.swatch then

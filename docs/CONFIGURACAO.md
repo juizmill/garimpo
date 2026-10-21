@@ -21,14 +21,16 @@ Venda, scan e ofertas ficam juntos nesta seção.
 | Opção | Padrão | O que faz |
 |---|---|---|
 | Abrir o painel junto com o Leilão | Ligado | Mostra o painel do Garimpo (Postar e Ofertas) ao abrir a Casa de Leilão. |
-| Scan completo ao abrir o Leilão | Ligado | Começa um scan completo ao abrir a Casa de Leilão, se já passaram 15 minutos do último. |
+| Scan completo ao abrir o Leilão | Ligado | Começa um scan completo ao abrir a Casa de Leilão quando o último tem mais de 30 minutos. |
 | Tipo de Leilão | Facção (5%) | Quanto o Leilão fica de cada venda: Facção (5%) ou Neutro (15%, como Angra do Butim). Vale para o lucro e para as ofertas. |
 | Duração padrão | 24h | 12h, 24h ou 48h. |
 | Margem de venda | 0% | Quanto acima do menor preço do Leilão postar. 0% = menor preço, 100% = dobro, negativo = mais barato. |
 | Lance inicial | 95% | Lance dos itens que aceitam lance, em % do arremate. |
+| Ignorar cortes abaixo do mercado em | 20% | Na aba Cancelar, um corte mais de X% abaixo do valor de mercado (média de 7 dias) aparece como **Muito abaixo**, com aviso no chat, e "Cancelar cortados" pula ele. |
 | Ofertas: lucro desejado (spread) | 20% | Lucro sobre o que você paga, já tirando a taxa do Leilão. Preço máximo de compra = *mercado × (1 − taxa) ÷ (1 + spread)*. |
 | Ofertas: lucro mínimo | 1g | Esconde ofertas que renderiam menos que isso no total. Aceita ouro, prata e cobre. |
-| Ofertas: só itens com 2+ dias de histórico | Ligado | Evita ofertas falsas em itens com pouco histórico de preço. |
+| Ofertas: quantidade a comprar | 10 | Valor inicial da caixa de quantidade ao lado do Comprar (mercadorias vendidas por unidade). |
+| Ofertas: só itens com histórico | Ligado | Compara com a média dos dias anteriores (um dia já basta). Desligado, itens vistos só hoje usam o valor de mercado de hoje, menos confiável. |
 | Ofertas: incluir equipamentos | Desligado | Equipamentos variam muito de preço; deixe desligado para menos ofertas falsas. |
 | Mostrar itens para segurar no painel | Desligado | Inclui itens abaixo da média de 7 dias na aba Postar. |
 | Tocar som quando vender | Ligado | Toca o som quando um leilão vende. |
@@ -56,5 +58,7 @@ Logo abaixo do lucro mínimo, uma linha junta os números em um exemplo e muda n
 
 ## Salvo por personagem
 
-Ficam por personagem, sem opção na Config: histórico de gold do gráfico, conteúdo do banco,
-leilões postados, posição da janela, do painel, da seta e o marcador atual.
+Ficam por personagem, sem opção na Config: gold do dia para o gráfico, conteúdo do banco,
+leilões postados e vendas dos últimos 30 dias, posição da janela, do painel, da seta e o marcador atual.
+
+Itens ignorados no painel do Leilão ficam salvos na conta e não são apagados por **Restaurar padrão**.

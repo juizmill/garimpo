@@ -63,6 +63,7 @@ ns:RegisterView("bags", function(parent)
           e.diff and ns.Pct(e.diff) or ns.Color("muted", "-"),
           e.advice and W.Pill(e.advice) or ns.Color("muted", "-"),
         },
+        sort = { ns.ItemName(e.id), e.count, e.total or e.junk, e.diff, e.advice },
       }
     end
     list:SetData(data, ns.HasPrices() and L.BAGS_EMPTY or L.NO_PRICES)

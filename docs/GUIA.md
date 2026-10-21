@@ -3,6 +3,8 @@
 Abra com `/garimpo`, pelo ícone do minimapa ou pelo painel de dados (Titan, ElvUI etc.).
 A janela pode ser arrastada e lembra a posição.
 
+**Ordenar listas:** em qualquer lista, clique no título de uma coluna (Item, Qtd, Total, Retorno, Lucro...). O primeiro clique ordena textos de A a Z e números do maior para o menor; o segundo inverte. A coluna ordenada aparece em dourado com `^` ou `v`. A rota de profissão não muda de ordem, porque segue o skill.
+
 ## Ranking
 
 Mostra cada categoria de item com:
@@ -40,12 +42,26 @@ O histórico de preços começa no dia em que você instala o addon. As sugestõ
 
 ## Leilões
 
-Lista tudo que você postou, seja pelo Garimpo, por outro addon de leilão ou pela tela do próprio jogo.
+Lista o que você postou, seja pelo Garimpo, por outro addon de leilão ou pela tela do próprio jogo. Só fica o que ainda importa:
 
-- **Expira em**: tempo restante. Os leilões postados pelo Garimpo usam a duração escolhida; os outros são acertados quando você abre a Casa de Leilão.
-- **Situação**: Ativo, Vendido, Expirou ou Encerrado (cancelado ou sumiu sem aviso).
+- **Vendidos** aparecem primeiro, do mais recente para o mais antigo, e ficam até você pegar o gold no correio. O Garimpo confere a caixa de correio quando você a abre: se a carta "Leilão bem-sucedido" daquele item sumiu, ele sai da lista.
+- **Ativos** vêm depois, do que expira antes para o que expira depois.
+- **Expirados e cancelados** saem da lista na hora.
+- Com o Leilão aberto, a lista de ativos fica igual à do jogo: quantidade, preço e tempo vêm de lá, e o que o jogo não lista mais sai.
+
+A aba **Vendidos** mostra todas as vendas dos últimos 30 dias, da mais recente para a mais antiga, mesmo depois de você pegar o gold. A aba **Compras** mostra o que você comprou no Leilão nos últimos 30 dias, pelas ofertas do Garimpo ou pela janela do próprio jogo, com quanto pagou. Lances que ainda não venceram não entram.
+
+No topo: leilões ativos (quantidade e valor), gold **a receber no correio** e quanto você **vendeu nos últimos 7 dias**.
+
 - **Vendas**: o jogo avisa no chat quando alguém compra. O Garimpo lê esse aviso em qualquer lugar do mundo, marca como vendido e toca o som de caixa registradora.
-- **Limpar concluídos**: remove da lista o que já terminou.
+### Cancelar leilões
+
+Fica na aba **Cancelar** do painel do Leilão. A lista mostra seus leilões ativos com o seu preço por unidade, o menor preço dos outros vendedores e se o leilão está **cortado**.
+
+- Marque a caixa à esquerda de cada leilão (ou clique na linha) e use **Cancelar marcados**. **Selecionar todos** marca a lista inteira.
+- **Cancelar cortados** cancela sempre todos os leilões em que outra pessoa está vendendo mais barato, marcados ou não. O primeiro clique (**Conferir cortados**) busca seus itens para ter os preços atuais; depois cada clique cancela um.
+- O jogo bloqueia mais de um cancelamento por clique (nenhum addon consegue) e fica com o depósito. O botão mostra quantos faltam ("Cancelar (restam 4)").
+- Para ir mais rápido, use a tecla de atalho "Botão da aba aberta" (Opções > Atalhos > AddOns > Garimpo). Na aba Cancelar ela repete o último botão usado ali; aperte várias vezes.
 
 Se houver dois leilões do mesmo item, o aviso do jogo não diz qual vendeu; o Garimpo marca o mais antigo.
 
@@ -54,22 +70,41 @@ Se houver dois leilões do mesmo item, o aviso do jogo não diz qual vendeu; o G
 Fica na aba **Ofertas** do painel do Leilão, já que as compras só funcionam com a Casa de Leilão aberta. O Garimpo escaneia a Casa de Leilão sozinho, sem outros addons.
 
 - **Scan completo**: lê todos os leilões de uma vez. O jogo permite um a cada 15 minutos; o botão mostra quanto falta. Com a opção ligada na Config, ele começa sozinho ao abrir a Casa de Leilão. O scan é processado aos poucos para não travar o jogo.
-- **Busca rápida**: procura, um por um, os itens que o Garimpo acompanha (categorias do Ranking, reagentes das rotas, o que está nas bolsas e no banco). Serve entre um scan completo e outro.
+- **Conferir ofertas**: busca de novo, um por um, só os itens que estão na lista de ofertas (no máximo 50). Confirma preço e quantidade reais e traz o número de cada leilão, então a compra passa a ser de um clique.
+
+A busca dos itens que o Garimpo acompanha (categorias do Ranking, reagentes das rotas, bolsas e banco) fica no botão **Atualizar** do Ranking.
+
+O botão **Scan completo** fica no topo do painel do Leilão e vale para todas as abas. Na aba Ofertas, o terceiro quadro do topo mostra o seu gold, que limita o que as ofertas oferecem.
+
+As ofertas comparam o preço de agora com a **média dos dias anteriores**. No primeiro dia de scans ainda não há histórico, então não aparecem ofertas; o Garimpo avisa isso, e a partir do dia seguinte elas aparecem.
+
+Um scan completo vale por **30 minutos**: nesse tempo as ofertas vêm dele, inclusive depois de `/reload` ou de entrar de novo no jogo, e abrir o Leilão não escaneia de novo. Depois de 30 minutos, o Garimpo pede (ou faz sozinho, com a opção ligada) um scan novo.
 
 Cada scan guarda, por item, o **menor preço**, o **valor de mercado** (média dos 15% mais baratos da quantidade à venda) e a **quantidade à venda**, além de um valor por dia para o histórico.
 
 ### Modo Ofertas
 
-Lista os leilões abaixo do valor de mercado dos últimos 7 dias, ordenados pelo lucro:
+Mostra sempre as **50 melhores compras que o seu gold paga agora**, não importa quantos itens o scan leu:
+
+1. Primeiro, as que atingem a sua margem (spread e lucro mínimo), do maior lucro para o menor.
+2. Se não chegar a 50, completa com os próximos melhores retornos abaixo da margem, em cor apagada.
+
+Cada item aparece no máximo 3 vezes, para um só não ocupar a lista. A quantidade da caixa já vem limitada ao que o seu gold paga. No topo, "Na sua margem / exibidas" mostra quantas são de cada tipo.
+
+**Largura das colunas**: arraste a alça no início de cada título para alargar ou estreitar a coluna; o nome do item fica com o espaço restante. Clique duplo na alça volta ao padrão. As larguras ficam salvas.
 
 | Coluna | Significado |
 |---|---|
-| Preço un. | Preço por unidade do leilão |
-| Mercado | Valor de referência (média de 7 dias) |
+| Disp. | Unidades daquele leilão |
+| Paga/un. | O que você paga por unidade. **A compra é sempre por este preço, nunca pelo valor de mercado.** |
+| Vale | Valor de mercado por unidade (média de 7 dias), usado só para calcular o lucro de revender |
 | Retorno | Lucro sobre o preço pago, já tirando a taxa do Leilão |
-| Lucro | Revenda pelo mercado menos a taxa do Leilão, menos o que você paga |
+| Lucro | Lucro de revender o que você vai comprar agora (quantidade da caixa, ou o leilão inteiro em equipamentos) |
+| Qtd. | Quantas unidades comprar (mercadorias) |
 
-Só entram leilões que dão pelo menos o **spread** (lucro desejado) da Config. Com spread de 20% e taxa de 5%, num item de 10g de mercado o Garimpo aceita pagar até 7g 92s. O lucro mínimo, a taxa do Leilão e se equipamentos entram também ficam na Config.
+Numa mercadoria, o jogo vende as unidades mais baratas primeiro: se você pede 10 e só há 3 naquele preço, as outras 7 vêm pelo preço seguinte. Por isso o botão mostra o **preço total cotado** antes de você confirmar.
+
+Clique em **Retorno** ou **Lucro** (ou em qualquer outro título) para ordenar. Só entram leilões que dão pelo menos o **spread** (lucro desejado) da Config. Com spread de 20% e taxa de 5%, num item de 10g de mercado o Garimpo aceita pagar até 7g 92s. O lucro mínimo, a taxa do Leilão e se equipamentos entram também ficam na Config.
 
 ### Comprar
 
@@ -78,15 +113,17 @@ O jogo exige um clique por compra; nenhum addon compra sozinho.
 - Ofertas vindas de uma **busca** compram com um clique em **Comprar**.
 - Ofertas vindas do **scan completo** não trazem o número do leilão: o primeiro clique (**Localizar**) encontra o leilão e o segundo (**Comprar**) compra.
 - **Mercadorias** (minérios, ervas, tecidos e outros itens empilháveis vendidos por unidade) mostram o preço final antes: o botão vira **Comprar 12g 30s** e o clique seguinte confirma.
-- Se alguém comprou antes, a linha mostra **Sumiu**.
+- **Quantidade**: a caixa ao lado do **Comprar** diz quantas unidades comprar de uma mercadoria (padrão 10, ajustável na Config). Mudar o número depois do preço aparecer pede uma nova cotação. Equipamentos são comprados um leilão por vez, então a caixa fica travada com a quantidade daquele leilão.
+- **Conferir no Leilão**: clique duas vezes no nome do item para buscá-lo (pelo nome exato) na janela do próprio Leilão e ver ali todas as quantidades e preços.
+- **Comprar de novo**: o botão continua ativo depois da compra. Em mercadorias, o próximo clique faz uma nova cotação. Em equipamentos, o leilão comprado some e o botão vira **Procurar outro**, que localiza o próximo leilão que ainda seja oferta. Ao lado do nome aparece quanto você já comprou daquele item (`+10`).
 
-### Modo Busca
+### Modo Lista de compras
 
-Mostra o leilão mais barato de cada item da última busca rápida, com o mesmo botão de compra. O botão **Buscar no Leilão** da tela de Profissões usa este modo com os reagentes que você precisa comprar.
+Mostra o leilão mais barato de cada reagente que você mandou buscar pelo botão **Buscar no Leilão** da tela de Profissões, com o mesmo botão de compra. Nenhuma outra busca mexe nesta lista. Itens sem retorno positivo (que não dariam lucro revendendo) não aparecem.
 
 ## Gráfico
 
-Gold do personagem por dia, em 7, 30 ou 90 dias. O valor é registrado ao entrar, a cada hora, a cada mudança de gold e ao sair. O gráfico precisa de pelo menos dois dias de registro. Passe o mouse para ver a data e o valor.
+Seu gold ao longo do dia de hoje. Cada ganho ou gasto vira um degrau na linha, e o fim da linha é o seu gold agora. No topo: gold no início do dia, agora e a variação. Passe o mouse para ver a hora e o valor. À meia-noite o gráfico recomeça.
 
 ## Profissões
 
@@ -98,7 +135,7 @@ Os botões no topo mostram suas profissões, separadas em **Principais** e **Sec
 - Quando falta treinar (por exemplo, Alfaiataria 71/75 sem o Artesão), o quadro mostra **Vá agora: Treinador...** com o nome do treinador da sua facção.
 - Cada linha traz a faixa de skill, a receita com os reagentes e o custo pelos preços de hoje.
 - Quando uma faixa tem mais de uma receita possível, o Garimpo escolhe a mais barata e marca **Mais barata**. Passe o mouse para comparar as opções.
-- Linhas em roxo são treinadores, livros e missões.
+- Linhas em roxo são treinadores, livros e missões. **Clique duas vezes** numa delas (ou no quadro "Vá agora") para a seta apontar para o NPC: o treinador, vendedor ou NPC de missão indicado na rota, ou o treinador mais próximo da sua facção quando qualquer um serve.
 - Mineração, Herborismo, Esfolamento e Pesca mostram onde coletar em cada faixa. Clique numa linha para marcar a zona no mapa.
 
 ### Comprar ou farmar
@@ -109,7 +146,7 @@ Mostra o que falta até o próximo treinador (ou até o skill 300, conforme a Co
 - Itens de vendedor sempre entram como compra.
 - **Farmar tudo** e **Comprar tudo** mostram os dois extremos.
 - O `*` no preço indica que sai mais barato comprar a matéria-prima e fabricar (por exemplo, comprar minério e fundir).
-- **Buscar no Leilão** busca os itens a comprar e abre a aba Ofertas do painel do Leilão no modo Busca, com o leilão mais barato de cada um.
+- **Buscar no Leilão** busca os itens a comprar e abre a aba Ofertas do painel do Leilão no modo Lista de compras, com o leilão mais barato de cada um.
 
 ### Reagente
 
@@ -128,7 +165,8 @@ Abre ao lado da Casa de Leilão (opção na Config). Pode ser arrastado e estica
 - No topo, o botão **Scan completo** e a situação do último scan.
 - Lista os itens marcados para vender, com o menor preço do Leilão, a **margem** e o seu preço.
 - **Margem**: 0% posta pelo menor preço atual do Leilão, 100% posta pelo dobro, valores negativos vendem mais barato. O valor inicial vem da Config (margem padrão ou por categoria) e pode ser mudado item a item.
-- **Postar** posta uma pilha; **Postar próximo** vai descendo a lista. O jogo exige um clique por postagem.
+- **Postar** posta uma pilha; **Postar próximo** vai descendo a lista. O jogo exige um clique por postagem. Para ir mais rápido, defina uma tecla em Opções > Atalhos > AddOns > Garimpo > "Botão da aba aberta" e aperte várias vezes (fora da aba Cancelar ela faz o "Postar próximo").
+- **Ignorar**: clique com o botão direito num item e escolha **Ignorar item** para ele não aparecer mais. A aba **Ignorados** lista esses itens; clique num deles para voltar a mostrá-lo.
 
 ## Seta de navegação
 

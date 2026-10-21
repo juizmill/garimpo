@@ -642,6 +642,62 @@ function ns:Plan(list, budgetCopper)
   return { gold = gold, minutes = minutes, allBuy = allBuy, allFarm = allFarm }
 end
 
+-- Where to go for a route milestone: the named NPC (trainer, book vendor, quest giver)
+-- when the data names one, otherwise the nearest trainer of the profession for your
+-- faction. Returns { map, x, y, name } with x, y from 0 to 1, or nil.
+function ns:TrainerSpot(s, profKey)
+  local faction = ns.PlayerFaction()
+  local function nearest(list)
+    local best, bestDist
+    for _, c in ipairs(list) do
+      local d = self.DistanceTo and self:DistanceTo(c.map, c.x, c.y)
+      if d and (not bestDist or d < bestDist) then best, bestDist = c, d end
+    end
+    return best or list[1]
+  end
+  local list = {}
+  if s.who then
+    local w = s.who[faction] or s.who.H or s.who.A
+    local name, map = w[1], w[2]
+    for _, p in ipairs(ns.NPCs and ns.NPCs[name] or {}) do
+      list[#list + 1] = { map = p[1], x = p[2] / 100, y = p[3] / 100, name = name }
+    end
+    if #list == 0 then
+      for _, t in ipairs(ns.Trainers and ns.Trainers[profKey] or {}) do
+        if t[6] == name then list[#list + 1] = { map = t[1], x = t[2] / 100, y = t[3] / 100, name = name } end
+      end
+    end
+    -- The zone named in the route data wins when the NPC appears in several places.
+    for _, c in ipairs(list) do
+      if c.map == map then return c end
+    end
+    if #list > 0 then return nearest(list) end
+    -- No position known (e.g. inside a dungeon): the zone from the route data.
+    return { map = map, x = 0.5, y = 0.5, name = name, approx = true }
+  end
+  local horde = faction == "H"
+  for _, t in ipairs(ns.Trainers and ns.Trainers[profKey] or {}) do
+    if (horde and t[5]) or (not horde and t[4]) then
+      list[#list + 1] = { map = t[1], x = t[2] / 100, y = t[3] / 100, name = t[6] }
+    end
+  end
+  if #list == 0 then return nil end
+  return nearest(list)
+end
+
+-- Points the arrow at the milestone's NPC.
+function ns:MarkTrainer(s, profKey)
+  local c = self:TrainerSpot(s, profKey)
+  if c and c.approx then
+    self:SetWaypoint(c.map, nil, c.name, c.x, c.y)   -- zone center
+    ns.Print(ns.L.TRAINER_APPROX:format(c.name, ns.ZoneName(c.map)))
+  elseif c then
+    self:SetWaypoint(c.map, nil, c.name, c.x, c.y)
+  else
+    ns.Print(ns.L.TRAINER_NOT_FOUND)
+  end
+end
+
 -- The professions to show: learned ones, or every one with a route when enabled.
 function ns:ProfessionList()
   local primary, secondary = {}, {}

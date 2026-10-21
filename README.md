@@ -12,12 +12,14 @@ Interface em **português e inglês**, com troca na aba Config.
 |---|---|
 | **Ranking** | Categorias (minérios, ervas, tecidos, couro, encantamento, pesca, transmog) ordenadas pelo gold por hora estimado, com variação em 24h e o melhor item. Clique numa categoria para ver os itens. |
 | **Bolsas** | Quanto valem suas bolsas, o que vale vender agora, o que segurar e o lixo para o vendedor. |
-| **Leilões** | Tudo que você postou, com tempo para expirar e situação (ativo, vendido, expirado). Toca uma caixa registradora quando algo vende. |
+| **Leilões** | Seus leilões ativos e os vendidos que ainda estão no correio (vendidos primeiro). Toca uma caixa registradora quando algo vende. |
 | **Ofertas** (no painel do Leilão) | Scanner próprio da Casa de Leilão e caçador de ofertas: leilões bem abaixo do valor de mercado, com o lucro de revenda e botão de comprar. |
-| **Gráfico** | Seu gold acumulado em 7, 30 ou 90 dias. |
+| **Gráfico** | Seu gold ao longo do dia de hoje, acompanhando cada ganho e gasto. |
 | **Profissões** | Rota de cada profissão até o próximo treinador, receita mais barata em cada faixa, plano de comprar ou farmar dentro do seu orçamento, onde farmar e onde comprar. |
 | **Config** | Idioma, margens de preço, som, seta, minimapa e opções de profissão. |
-| **Painel do Leilão** | Abre junto com a Casa de Leilão, com duas abas: **Postar** (o que vender, com o preço sugerido, um clique por item) e **Ofertas**. |
+| **Painel do Leilão** | Abre junto com a Casa de Leilão, com quatro abas: **Postar** (o que vender, com o preço sugerido, um clique por item), **Ofertas**, **Cancelar** (os leilões marcados, ou todos os cortados) e **Ignorados**. |
+
+Em todas as listas, clique no título de uma coluna para ordenar; clique de novo para inverter.
 | **Seta de navegação** | Aponta para a área de farm, para o vendedor mais próximo ou para seus pontos de coleta, com a distância em jardas. |
 | **Tooltip** | Preço no Leilão, média de 7 dias, tendência e sugestão em qualquer item. |
 

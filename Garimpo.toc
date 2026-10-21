@@ -2,7 +2,7 @@
 ## Title: Garimpo
 ## Notes: Shows what is making the most gold right now and helps you level professions for less.
 ## Notes-ptBR: Mostra o que está dando mais gold agora e ajuda a upar profissões gastando menos.
-## Version: 0.2.4
+## Version: 0.3.9
 ## SavedVariables: GarimpoDB
 ## SavedVariablesPerCharacter: GarimpoCharDB
 ## OptionalDeps: LibStub, LibDataBroker-1.1
@@ -15,6 +15,7 @@ Data\Items.lua
 Data\Professions.lua
 Data\Vendors.lua
 Data\Nodes.lua
+Data\Trainers.lua
 Analysis.lua
 Scanner.lua
 UI\Widgets.lua

@@ -3,7 +3,7 @@ local L, W = ns.L, ns.W
 
 local panel
 local ROW_H = 26
-local MIN_W, MIN_H = 640, 470   -- room for the Deals tab columns
+local MIN_W, MIN_H = 720, 470   -- room for the Deals tab columns
 -- Distance of each column's right edge from the row's right edge.
 local COL = { price = 68, pct = 152, margin = 164, ah = 212, qty = 288 }
 local overrides = {}   -- [itemID] = margin typed in the panel this session
@@ -26,14 +26,32 @@ end
 
 local function entries()
   local rows = ns:BagReport(false)
-  local showHold = ns.db.settings.showHold
+  local showHold, ignored = ns.db.settings.showHold, ns.db.ignored
   local out = {}
   for _, e in ipairs(rows) do
-    if e.unit and e.quality and e.quality > 0 and (showHold or e.advice ~= "hold") and #ns:FindSlots(e.id) > 0 then
+    if e.unit and e.quality and e.quality > 0 and not ignored[e.id] and (showHold or e.advice ~= "hold")
+      and #ns:FindSlots(e.id) > 0 then
       out[#out + 1] = e
     end
   end
   return out
+end
+
+local function setIgnored(id, on)
+  ns.db.ignored[id] = on or nil
+  if panel then panel:Refresh() end
+end
+
+-- Right-click menu on a row of the Post tab.
+local function rowMenu(owner, id)
+  if MenuUtil and MenuUtil.CreateContextMenu then
+    MenuUtil.CreateContextMenu(owner, function(_, root)
+      root:CreateTitle(ns.ItemName(id))
+      root:CreateButton(L.IGNORE_ITEM, function() setIgnored(id, true) end)
+    end)
+  else
+    setIgnored(id, true)
+  end
 end
 
 -- Modern Auction House (Forever's engine). Prices go in whole silver.
@@ -85,6 +103,19 @@ local function postEntry(e)
   local bid = math.max(1, math.floor(buyout * ns.db.settings.bidPercent / 100))
   PostAuction(bid, buyout, ns.db.settings.duration, count, 1)
   ns.Print(L.POSTED:format(count, name, ns.PlainMoney(buyout)))
+end
+
+-- Key binding (Bindings.xml): the main button of the open tab. Cancel tab: cancel the
+-- next auction; any other tab: the "Post next" button at the bottom of the Post tab.
+function GarimpoPanelKey()
+  if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
+  if panel and panel:IsShown() and panel.tab == "cancel" then
+    GarimpoCancelNext()
+  elseif panel and panel.nextEntry then
+    postEntry(panel.nextEntry)
+  else
+    ns.Print(L.ALL_POSTED)
+  end
 end
 
 local function makeRow(parent, i)
@@ -139,9 +170,14 @@ local function makeRow(parent, i)
     if not r.entry then return end
     GameTooltip:SetOwner(self, "ANCHOR_LEFT")
     GameTooltip:SetHyperlink("item:" .. r.entry.id)
+    GameTooltip:AddLine(" ")
+    GameTooltip:AddLine(L.RIGHT_CLICK_IGNORE, 0.6, 0.56, 0.49)
     GameTooltip:Show()
   end)
   hover:SetScript("OnLeave", GameTooltip_Hide)
+  hover:SetScript("OnMouseUp", function(self, button)
+    if button == "RightButton" and r.entry then rowMenu(self, r.entry.id) end
+  end)
   return r
 end
 
@@ -184,7 +220,36 @@ local function create()
   -- Two tabs: posting your items, and deals to buy.
   panel.tabs = W.Chips(panel, function(v) panel:SelectTab(v) end, "tab")
   panel.tabs:SetPoint("TOPLEFT", 10, -34)
-  panel.tabs:SetItems({ { value = "post", key = "AH_TAB_POST" }, { value = "deals", key = "TAB_DEALS" } })
+  panel.tabs:SetItems({
+    { value = "post", key = "AH_TAB_POST" }, { value = "deals", key = "TAB_DEALS" },
+    { value = "cancel", key = "AH_TAB_CANCEL" }, { value = "ignored", key = "AH_TAB_IGNORED" },
+  })
+
+  -- Cancel your auctions by name and quantity, or the undercut ones.
+  panel.cancel = ns.BuildCancelView(panel)
+  panel.cancel:SetPoint("TOPLEFT", 10, -64)
+  panel.cancel:SetPoint("BOTTOMRIGHT", -10, 22)
+  panel.cancel:Hide()
+
+  -- Ignored items: click one to show it again in the Post tab.
+  panel.ignored = W.List(panel, { { width = 400, header = "COL_ITEM" } }, 22)
+  panel.ignored:SetPoint("TOPLEFT", 10, -64)
+  panel.ignored:SetPoint("BOTTOMRIGHT", -10, 22)
+  panel.ignored:Hide()
+  function panel.ignored:Refresh()
+    local data = {}
+    for id in pairs(ns.db.ignored) do
+      data[#data + 1] = {
+        icon = ns.ItemIcon(id),
+        cells = { "|cff" .. ns.ItemQualityHex(id) .. ns.ItemName(id) .. "|r" },
+        sort = { ns.ItemName(id) },
+        tip = { ns.ItemName(id), ns.Color("gold", L.CLICK_UNIGNORE) },
+        onClick = function() setIgnored(id, false) end,
+      }
+    end
+    table.sort(data, function(a, b) return a.sort[1] < b.sort[1] end)
+    self:SetData(data, L.IGNORED_EMPTY)
+  end
 
   local post = CreateFrame("Frame", nil, panel)
   post:SetPoint("TOPLEFT", 0, -64)
@@ -201,6 +266,9 @@ local function create()
     self.tabs:Select(tab)
     self.post:SetShown(tab == "post")
     self.deals:SetShown(tab == "deals")
+    self.ignored:SetShown(tab == "ignored")
+    self.cancel:SetShown(tab == "cancel")
+    if tab == "cancel" then ns:QueryOwned() end
     self:Refresh()
   end
 
@@ -208,19 +276,20 @@ local function create()
   hdr:SetPoint("TOPLEFT", 10, 0)
   hdr:SetPoint("TOPRIGHT", -34, 0)
   hdr:SetHeight(16)
-  local function col(key, right, w)
-    local fs = W.Font(hdr, 10, W.C.muted, "RIGHT")
-    fs:SetPoint("RIGHT", -right, 0)
-    fs:SetWidth(w)
-    W.Label(fs, key)
-  end
-  local itemHeader = W.Font(hdr, 10, W.C.muted)
+  -- Clickable titles sort the list.
+  panel.sorter = W.Sorter(function() panel:Refresh() end, { name = true })
+  local itemHeader = W.SortHeader(hdr, "COL_ITEM", 160, "LEFT")
   itemHeader:SetPoint("LEFT", 4, 0)
-  W.Label(itemHeader, "COL_ITEM")
-  col("COL_QTY", COL.qty, 36)
-  col("COL_AH", COL.ah, 70)
-  col("COL_MARGIN", COL.margin - 12, 60)
-  col("COL_YOUR_PRICE", COL.price, 76)
+  panel.sorter:Add(itemHeader, "name")
+  local function col(key, sortKey, right, w)
+    local h = W.SortHeader(hdr, key, w, "RIGHT")
+    h:SetPoint("RIGHT", -right, 0)
+    if sortKey then panel.sorter:Add(h, sortKey) end
+  end
+  col("COL_QTY", "count", COL.qty, 36)
+  col("COL_AH", "lowest", COL.ah, 70)
+  col("COL_MARGIN", nil, COL.margin - 12, 60)
+  col("COL_YOUR_PRICE", "price", COL.price, 76)
   local line = W.Line(hdr)
   line:SetPoint("BOTTOMLEFT")
   line:SetPoint("BOTTOMRIGHT")
@@ -297,8 +366,17 @@ local function create()
     end
   end
 
+  local sortValue = {
+    name = function(e) return ns.ItemName(e.id) end,
+    count = function(e) return e.count end,
+    lowest = function(e) return lowest(e) end,
+    price = function(e) return priceFor(e) end,
+  }
+
   function panel:Refresh()
     self.list = entries()
+    local s = self.sorter
+    if s.col then W.SortRows(self.list, sortValue[s.col], s.asc) end
     for i, e in ipairs(self.list) do
       local r = self.rows[i] or makeRow(self.child, i)
       self.rows[i] = r
@@ -326,6 +404,8 @@ local function create()
     self.hold:SetChecked(ns.db.settings.showHold)
     self:UpdateNext()
     if self.deals:IsShown() then self.deals:Refresh() end
+    if self.ignored:IsShown() then self.ignored:Refresh() end
+    if self.cancel:IsShown() then self.cancel:Refresh() end
   end
 
   panel.tab = "post"
@@ -339,6 +419,10 @@ function ns:ShowAuctionTab(tab)
   if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
   ns:ShowAuctionPanel(true)
   panel:SelectTab(tab)
+end
+
+function ns:RefreshAuctionPanel()
+  if panel and panel:IsShown() then panel:Refresh() end
 end
 
 function ns:RefreshDeals()

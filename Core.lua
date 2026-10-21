@@ -12,8 +12,9 @@ local DEFAULTS = {
     sale = { sound = true, kind = "register" },   -- kind: "register" or "coins"
     scan = { auto = true },                       -- full scan when the Auction House opens
     -- spread: wanted profit over the price paid, after the Auction House cut (ahCut %).
-    deals = { spread = 20, ahCut = 5, minProfitCopper = 10000, requireHistory = true, gear = false },
+    deals = { spread = 20, ahCut = 5, minProfitCopper = 10000, requireHistory = true, gear = false, buyQty = 10 },
     defaultMargin = 0,
+    cutFloor = 20,         -- undercuts more than this % below market value are ignored
     categoryMargin = {},
     duration = 2,          -- 1 = 12h, 2 = 24h, 3 = 48h
     bidPercent = 95,
@@ -30,6 +31,8 @@ local DEFAULTS = {
   },
   prices = {},             -- [itemID] = { [day] = market value in copper }
   market = {},             -- [itemID] = { p = lowest, m = market value, q = quantity, t = time }
+  ignored = {},            -- [itemID] = true: hidden from the Post tab (kept when settings are reset)
+  dealCols = {},           -- column widths of the Deals list chosen by dragging
   lastFullScan = 0,
   farm = {},               -- [categoryKey] = { value = copper, seconds = n }
   nodes = {},              -- [uiMapID] = { [itemID] = { { x, y }, ... } } where the player gathered
@@ -39,8 +42,11 @@ local CHAR_DEFAULTS = {
   gold = {},               -- [day] = copper
   bank = {},               -- [itemID] = count
   bankTime = 0,
-  auctions = {},           -- posted auctions, newest first
+  auctions = {},           -- posted auctions, newest first (active, and sold until collected)
+  sales = {},              -- { t = time, total = copper } for the last 30 days
+  purchases = {},          -- { t, itemID, name, qty, total } bought at the AH, last 30 days
   lastAuctionSync = 0,
+  goldToday = { day = 0, points = {} },
 }
 
 local function fill(dst, src)
@@ -278,8 +284,28 @@ end
 
 -- Gold history
 
+-- Daily close for history, and today's points { time, copper } for the chart.
 local function recordGold()
-  if ns.char then ns.char.gold[ns.Today()] = GetMoney() end
+  if not ns.char then return end
+  local today, money, now = ns.Today(), GetMoney(), time()
+  ns.char.gold[today] = money
+  local t = ns.char.goldToday
+  if t.day ~= today then
+    t.day, t.points = today, {}
+  end
+  local pts = t.points
+  local last = pts[#pts]
+  -- Same amount within 10 minutes adds nothing to the line.
+  if last and last[2] == money and now - last[1] < 600 then return end
+  pts[#pts + 1] = { now, money }
+  -- Keep the day light: thin the older half when it grows past 600 points.
+  if #pts > 600 then
+    local thinned = {}
+    for i, p in ipairs(pts) do
+      if i > 300 or i % 2 == 1 then thinned[#thinned + 1] = p end
+    end
+    t.points = thinned
+  end
 end
 
 local function prune(t, keepDays)
@@ -309,7 +335,8 @@ for _, event in ipairs({
   "CHAT_MSG_SYSTEM", "OWNED_AUCTIONS_UPDATED", "AUCTION_HOUSE_AUCTION_CREATED",
   "REPLICATE_ITEM_LIST_UPDATE", "COMMODITY_SEARCH_RESULTS_UPDATED", "ITEM_SEARCH_RESULTS_UPDATED",
   "COMMODITY_PRICE_UPDATED", "COMMODITY_PURCHASE_SUCCEEDED", "COMMODITY_PURCHASE_FAILED",
-  "AUCTION_HOUSE_PURCHASE_COMPLETED", "AUCTION_HOUSE_SHOW_ERROR",
+  "AUCTION_HOUSE_PURCHASE_COMPLETED", "AUCTION_HOUSE_SHOW_ERROR", "MAIL_INBOX_UPDATE",
+  "AUCTION_HOUSE_BROWSE_RESULTS_UPDATED", "AUCTION_HOUSE_BROWSE_RESULTS_ADDED", "AUCTION_CANCELED",
 }) do
   -- Some events only exist on one engine; registering an unknown one raises an error.
   pcall(frame.RegisterEvent, frame, event)
@@ -341,7 +368,7 @@ ns:On("PLAYER_LOGIN", function()
     ns.skills = ns.skills or {}
     geterrorhandler()(err)
   end
-  C_Timer.NewTicker(3600, recordGold)
+  C_Timer.NewTicker(300, recordGold)
   ns:Fire("READY")
 end)
 

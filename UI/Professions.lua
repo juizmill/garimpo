@@ -97,6 +97,19 @@ local function buildRoute(parent, view)
   f.nowSub = W.Font(now, 11, W.C.muted)
   f.nowSub:SetPoint("BOTTOMLEFT", 10, 5)
   f.nowSub:SetPoint("RIGHT", now, "RIGHT", -10, 0)
+  -- When a trainer, book or quest is due, double-clicking the box points the arrow there.
+  local nowButton = CreateFrame("Button", nil, now)
+  nowButton:SetAllPoints()
+  nowButton:SetScript("OnDoubleClick", function()
+    if f.dueStep then ns:MarkTrainer(f.dueStep, f.key) end
+  end)
+  nowButton:SetScript("OnEnter", function(self)
+    if not f.dueStep then return end
+    GameTooltip:SetOwner(self, "ANCHOR_BOTTOM")
+    GameTooltip:SetText(L.DOUBLE_CLICK_TRAINER, 1, 0.82, 0, 1, true)
+    GameTooltip:Show()
+  end)
+  nowButton:SetScript("OnLeave", GameTooltip_Hide)
 
   f.stat1 = W.Stat(f, "STAT_TO_TARGET", 200)
   f.stat1:SetPoint("TOPLEFT", 0, -84)
@@ -183,7 +196,8 @@ local function buildRoute(parent, view)
           if r.status == "done" then d.cells[4] = W.Pill("done")
           elseif r.status == "due" then d.cells[4] = ns.Color("gold", L.DUE_NOW:upper())
           else d.cells[4] = W.Pill(s.mile) end
-          if s.note then d.tip = { mileTitle(s), mileSub(s) } end
+          d.tip = { mileTitle(s), mileSub(s), ns.Color("gold", L.DOUBLE_CLICK_TRAINER) }
+          d.onDoubleClick = function() ns:MarkTrainer(s, key) end
         elseif s.options then
           local o = r.option
           local frac = r.frac > 0 and r.frac or 1
@@ -237,7 +251,9 @@ local function buildRoute(parent, view)
 
     -- Leveling now. A due trainer, book or quest comes first: without it the skill is capped.
     local skillMax = ns:SkillMax(key)
+    self.key, self.dueStep = key, nil
     if due and (not current or rank >= skillMax - 5) then
+      self.dueStep = due.step
       local s = due.step
       self.nowIcon:SetTexture("Interface\\Icons\\INV_Misc_Book_09")
       self.nowIcon:Show()
@@ -388,6 +404,7 @@ local function buildPlan(parent, view)
           e.buy > 0 and ns.Num(e.buy) or "-", e.farm > 0 and ns.Num(e.farm) or "-",
           W.Pill(e.decision),
         },
+        sort = { ns.ItemName(e.id), e.miss, e.unit, e.buy, e.farm, e.decision },
         onClick = function() view:ShowReagent(e) end,
       }
     end
@@ -407,7 +424,7 @@ local function buildPlan(parent, view)
     ns:QuickSearch(ids, function()
       ns.dealsMode = "search"
       ns:ShowAuctionTab("deals")
-    end)
+    end, true)
   end
 
   return f
@@ -535,6 +552,7 @@ local function buildReagent(parent, view)
         rows[#rows + 1] = {
           cells = { v.name, zone, string.format("%.0f, %.0f", v.x * 100, v.y * 100),
             v.dist and L.YARDS:format(ns.Num(v.dist)) or ns.Color("muted", L.FAR_AWAY) },
+          sort = { v.name, zone, nil, v.dist },
           tone = i == 1 and "top" or nil,
           colors = not v.dist and { W.C.muted, W.C.muted, W.C.muted } or nil,
           tip = { v.name, zone .. string.format("  %.1f, %.1f", v.x * 100, v.y * 100), ns.Color("gold", L.CLICK_TO_MARK) },
@@ -576,6 +594,7 @@ local function buildReagent(parent, view)
       tip[#tip + 1] = ns.Color("gold", L.CLICK_TO_MARK)
       zones[#zones + 1] = {
         cells = { ns.ZoneName(z[1]), z[2], fac, nodes > 0 and ns.Num(nodes) or (spots > 0 and ns.Num(spots) or ns.Color("muted", "-")) },
+        sort = { ns.ZoneName(z[1]), tonumber(z[2]:match("%d+")), fac, nodes > 0 and nodes or spots },
         tone = i == 1 and "top" or nil,
         colors = (z[3] ~= "B" and z[3] ~= faction) and { W.C.muted, W.C.muted, W.C.muted } or nil,
         tip = tip,

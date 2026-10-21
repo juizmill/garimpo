@@ -148,6 +148,10 @@ ns:RegisterView("config", function(parent)
     function(v) S().defaultMargin = math.max(-90, v) end)
   number("CFG_BID", "CFG_BID_TIP", "%", function() return S().bidPercent end,
     function(v) S().bidPercent = math.max(1, math.min(100, v)) end)
+  number("CFG_CUT_FLOOR", "CFG_CUT_FLOOR_TIP", "%", function() return S().cutFloor end, function(v)
+    S().cutFloor = math.max(0, math.min(100, v))
+    ns:Fire("AUCTIONS")
+  end)
 
   -- Buying (deals)
   number("CFG_DEAL_SPREAD", "CFG_SPREAD_HINT", "%", function() return S().deals.spread end, function(v)
@@ -173,6 +177,8 @@ ns:RegisterView("config", function(parent)
       ns.PlainMoney(S().deals.minProfitCopper)))
   end
 
+  number("CFG_DEAL_BUY_QTY", "CFG_DEAL_BUY_QTY_TIP", "", function() return S().deals.buyQty end,
+    function(v) S().deals.buyQty = math.max(1, math.floor(v)) end)
   check("CFG_DEAL_HISTORY", "CFG_DEAL_HISTORY_TIP", function() return S().deals.requireHistory end, function(on)
     S().deals.requireHistory = on
     ns:FindDeals()

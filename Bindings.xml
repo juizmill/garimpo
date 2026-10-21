@@ -1,0 +1,5 @@
+<Bindings>
+  <Binding name="GARIMPO_CANCEL" header="GARIMPO" category="ADDONS">
+    GarimpoPanelKey()
+  </Binding>
+</Bindings>
