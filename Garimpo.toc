@@ -28,6 +28,7 @@ UI\Config.lua
 UI\AuctionPanel.lua
 UI\Auctions.lua
 UI\Deals.lua
+UI\Shopping.lua
 UI\Tooltip.lua
 UI\Waypoint.lua
 UI\Minimap.lua

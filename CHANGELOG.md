@@ -2,6 +2,8 @@
 
 ## 0.3.9
 
+- Painel do Leilão: nova aba **Profissão**, entre Ofertas e Cancelar, com a lista de compras dos reagentes. A lista fica salva por personagem, tem caixas de seleção com "Selecionar todos", botão **X** para remover um item e **Remover marcados**. Comprar desconta da lista. Clicar no nome (ou em "Localizar") abre logo abaixo do item a lista dos leilões encontrados, com vendedor, preço, quantidade e total; equipamentos podem ser comprados leilão a leilão. O modo "Lista de compras" da aba Ofertas saiu.
+- Profissões > Comprar ou farmar: caixa de seleção em cada reagente do Leilão; o botão "Buscar no Leilão" virou **Criar lista do leilão** e manda só os marcados para a aba Profissão.
 - Cancelar: as caixas de nome e quantidade viraram uma caixa de seleção em cada leilão, mais "Selecionar todos". "Cancelar marcados" cancela os marcados; "Cancelar cortados" sempre cancela todos os cortados.
 - Continua um cancelamento por clique: o jogo bloqueia o segundo no mesmo clique (testado). Os que o servidor não confirmar são enviados de novo.
 - Aba Leilões: a lista de ativos fica igual à do Leilão do jogo. Postagens que nunca receberam o número do leilão (mercadorias que o jogo junta) não ficam mais presas na lista.

@@ -117,9 +117,23 @@ O jogo exige um clique por compra; nenhum addon compra sozinho.
 - **Conferir no Leilão**: clique duas vezes no nome do item para buscá-lo (pelo nome exato) na janela do próprio Leilão e ver ali todas as quantidades e preços.
 - **Comprar de novo**: o botão continua ativo depois da compra. Em mercadorias, o próximo clique faz uma nova cotação. Em equipamentos, o leilão comprado some e o botão vira **Procurar outro**, que localiza o próximo leilão que ainda seja oferta. Ao lado do nome aparece quanto você já comprou daquele item (`+10`).
 
-### Modo Lista de compras
+### Aba Profissão (lista de compras)
 
-Mostra o leilão mais barato de cada reagente que você mandou buscar pelo botão **Buscar no Leilão** da tela de Profissões, com o mesmo botão de compra. Nenhuma outra busca mexe nesta lista. Itens sem retorno positivo (que não dariam lucro revendendo) não aparecem.
+Fica entre **Ofertas** e **Cancelar** e mostra os reagentes que você mandou para a lista em Profissões > Comprar ou farmar. A lista fica salva por personagem até você comprar ou remover os itens.
+
+| Coluna | Significado |
+|---|---|
+| Faltam | Quantas unidades ainda faltam comprar |
+| Disp. | Unidades à venda por outros jogadores na última busca |
+| Paga/un. | Preço do leilão mais barato |
+| Total | Custo de comprar o que falta, pelos leilões mais baratos |
+| Qtd. | Quantas unidades comprar no próximo clique (mercadorias); começa com o que falta |
+
+- **Buscar no Leilão** busca todos os itens da lista, com preços e quantidades reais.
+- **Comprar** funciona como na aba Ofertas (Localizar, cotação de mercadorias, Procurar outro), mas aceita o leilão mais barato a qualquer preço.
+- **Ver os leilões**: clique no nome do item (ou em **Localizar**) para abrir, logo abaixo dele, a lista dos leilões encontrados: vendedor, preço por unidade, quantidade e total, até 10 leilões. Em equipamentos cada leilão tem seu próprio **Comprar**; em mercadorias a compra é pela quantidade na linha do item, sempre pelos mais baratos. Clique de novo no nome para fechar. O que você compra é descontado da lista, e o item sai quando não falta mais nada.
+- **X** remove o item da lista. Marque as caixas (ou **Selecionar todos**) e clique em **Remover marcados** para tirar vários de uma vez.
+- Clique duas vezes no nome para buscá-lo na janela do Leilão.
 
 ## Gráfico
 
@@ -146,7 +160,8 @@ Mostra o que falta até o próximo treinador (ou até o skill 300, conforme a Co
 - Itens de vendedor sempre entram como compra.
 - **Farmar tudo** e **Comprar tudo** mostram os dois extremos.
 - O `*` no preço indica que sai mais barato comprar a matéria-prima e fabricar (por exemplo, comprar minério e fundir).
-- **Buscar no Leilão** busca os itens a comprar e abre a aba Ofertas do painel do Leilão no modo Lista de compras, com o leilão mais barato de cada um.
+- Cada reagente que se compra no Leilão tem uma caixa de seleção. Já vêm marcados os que o plano manda comprar; marque ou desmarque o que quiser.
+- **Criar lista do leilão** manda os marcados para a aba **Profissão** do painel do Leilão, com a quantidade a comprar (ou tudo o que falta, se o plano manda farmar). Se o item já estava na lista, a quantidade é atualizada. Com o Leilão aberto, o Garimpo já busca os itens e abre a aba.
 
 ### Reagente
 

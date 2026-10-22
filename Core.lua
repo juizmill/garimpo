@@ -45,6 +45,7 @@ local CHAR_DEFAULTS = {
   auctions = {},           -- posted auctions, newest first (active, and sold until collected)
   sales = {},              -- { t = time, total = copper } for the last 30 days
   purchases = {},          -- { t, itemID, name, qty, total } bought at the AH, last 30 days
+  shopping = {},           -- { id, qty } reagents to buy, from Professions > Buy or farm
   lastAuctionSync = 0,
   goldToday = { day = 0, points = {} },
 }

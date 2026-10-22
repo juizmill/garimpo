@@ -30,7 +30,6 @@ end
 ns.scan = { state = "idle", done = 0, total = 0 }
 ns.listings = {}            -- [itemID] = sorted listings { unit, count, mine, auctionID, commodity, itemKey }
 ns.deals = {}
-ns.searchResults = {}       -- itemIDs of the last quick search, in order
 
 local function setState(state, done, total)
   ns.scan.state, ns.scan.done, ns.scan.total = state, done or 0, total or 0
@@ -286,9 +285,7 @@ nextSearch = function()
 end
 
 -- ids: list of itemIDs. done: optional callback when the whole list is searched.
--- shopping: the search comes from a shopping list (Professions); only then the Deals
--- tab's "Shopping list" mode shows these items.
-function ns:QuickSearch(ids, done, shopping)
+function ns:QuickSearch(ids, done)
   if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
   if not (AH and AH.SendSearchQuery) then ns.Print(L.SCAN_UNSUPPORTED); return end
   if self.scan.state ~= "idle" then return end
@@ -296,7 +293,6 @@ function ns:QuickSearch(ids, done, shopping)
   for _, id in ipairs(ids) do
     if type(id) == "number" then queue[#queue + 1] = id end
   end
-  if shopping then self.searchResults = { unpack(queue) } end
   onFinished = done
   setState("searching", 0, #queue)
   nextSearch()
@@ -500,7 +496,8 @@ local function locate(d)
   d.state = "locating"
   ns:Fire("DEALS")
   local id = d.id
-  local limit = math.max(d.l.unit * 1.001, d.ref and ns.MaxBuyPrice(d.ref) or 0)
+  -- Shopping list rows (d.anyPrice) take the cheapest auction at any price.
+  local limit = d.anyPrice and math.huge or math.max(d.l.unit * 1.001, d.ref and ns.MaxBuyPrice(d.ref) or 0)
   ns:QuickSearch({ id }, function()
     local found
     for _, l in ipairs(ns.listings[id] or {}) do
@@ -566,6 +563,7 @@ local function bought(d)
   local qty = d.qtyQuoted or d.l.count
   ns.Print(L.BOUGHT:format(qty, ns.ItemName(d.id), ns.PlainMoney(d.quote or d.l.unit * qty)))
   d.boughtCount = (d.boughtCount or 0) + qty
+  if d.onBought then d.onBought(qty) end
   d.state, d.quote, d.qtyQuoted = nil, nil, nil
   if not d.l.commodity then
     local list = ns.listings[d.id]

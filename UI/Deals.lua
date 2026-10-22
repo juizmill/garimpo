@@ -31,7 +31,7 @@ end
 
 -- Shows the item in the game's own Auction House window (exact-name search), to check
 -- quantities and prices there.
-local function showInAuctionHouse(id)
+function ns.ShowInAuctionHouse(id)
   local name = ns.ItemInfo(id)
   local ah = AuctionHouseFrame
   if not (name and ah and ah:IsShown()) then return end
@@ -71,7 +71,7 @@ function ns.ScanStatus()
   return L.NO_SCAN_YET
 end
 
-local function buttonText(d)
+function ns.DealButtonText(d)
   local st = d.state
   if st == "locating" or st == "quote" or st == "buying" then return "..." end
   if st == "confirm" then return L.CONFIRM_PRICE:format(ns.PlainMoney(d.quote or 0)) end
@@ -81,13 +81,13 @@ local function buttonText(d)
 end
 
 -- Items (not commodities) are bought one whole auction at a time.
-local function isSingle(d)
+function ns.DealIsSingle(d)
   return d.l.auctionID ~= nil and not d.l.commodity
 end
 
 -- Profit of what this row would buy now: per-unit profit times the units bought.
 local function rowProfit(d)
-  local units = isSingle(d) and d.l.count or ns.DealBuyQty(d)
+  local units = ns.DealIsSingle(d) and d.l.count or ns.DealBuyQty(d)
   return (d.ref * ns.SaleKeep() - d.l.unit) * units
 end
 
@@ -157,7 +157,7 @@ local function makeRow(parent, i)
   end)
   hover:SetScript("OnLeave", GameTooltip_Hide)
   hover:SetScript("OnDoubleClick", function()
-    if r.deal then showInAuctionHouse(r.deal.id) end
+    if r.deal then ns.ShowInAuctionHouse(r.deal.id) end
   end)
   return r
 end
@@ -165,8 +165,6 @@ end
 -- The Deals tab of the Auction House panel. The caller anchors the returned frame.
 function ns.BuildDealsView(parent)
   local f = CreateFrame("Frame", nil, parent)
-  f.mode = "deals"
-  local searchCache = setmetatable({}, { __mode = "k" })   -- listing -> row deal, for buy states
 
   local count = W.Stat(f, "STAT_DEALS", 200)
   count:SetPoint("TOPLEFT", 0, 0)
@@ -175,14 +173,6 @@ function ns.BuildDealsView(parent)
   -- Your gold limits what the deals offer; the scan status is at the top of the panel.
   local gold = W.Stat(f, "STAT_GOLD", 200)
   gold:SetPoint("LEFT", profit, "RIGHT", 8, 0)
-
-  local mode = W.Chips(f, function(v)
-    f.mode = v
-    f:Refresh()
-  end)
-  mode:SetPoint("TOPLEFT", 0, -48)
-  mode:SetItems({ { value = "deals", key = "MODE_DEALS" }, { value = "search", key = "MODE_SEARCH" } })
-  mode:Select("deals")
 
   -- Re-checks only the items on the deals list: real prices and quantities, and auction IDs
   -- so each one buys with a single click.
@@ -198,11 +188,7 @@ function ns.BuildDealsView(parent)
       ns.Print(ns:NoDealsReason())
       return
     end
-    ns:QuickSearch(ids, function()
-      f.mode = "deals"
-      mode:Select("deals")
-      f:Refresh()
-    end)
+    ns:QuickSearch(ids, function() f:Refresh() end)
   end)
   quick:SetPoint("TOPRIGHT", 0, -46)
 
@@ -327,36 +313,9 @@ function ns.BuildDealsView(parent)
   foot:SetWordWrap(true)
   W.Label(foot, "DEALS_FOOT")
 
-  -- Rows for the search mode: the cheapest listing of each searched item.
-  local function searchRows()
-    local list = {}
-    for _, id in ipairs(ns.searchResults) do
-      for _, l in ipairs(ns.listings[id] or {}) do
-        if not l.mine then
-          local d = searchCache[l]
-          if not d then
-            local ref = ns:Reference(id) or ns.Market(id) or l.unit
-            local p, roi = ns.DealProfit(l.unit, l.count, ref)
-            d = { id = id, l = l, ref = ref, roi = roi, profit = p, good = l.unit <= ns.MaxBuyPrice(ref) }
-            searchCache[l] = d
-          end
-          -- Only listings that give some return when resold.
-          if d.roi > 0 then list[#list + 1] = d end
-          break
-        end
-      end
-    end
-    return list
-  end
-
   function f:Refresh()
-    if ns.dealsMode then
-      self.mode = ns.dealsMode
-      mode:Select(self.mode)
-      ns.dealsMode = nil
-    end
     local list = {}
-    for _, d in ipairs(self.mode == "search" and searchRows() or ns.deals) do
+    for _, d in ipairs(ns.deals) do
       if d.roi and d.roi > 0 then list[#list + 1] = d end
     end
     if sorter.col then W.SortRows(list, sortValue[sorter.col], sorter.asc) end
@@ -396,12 +355,12 @@ function ns.BuildDealsView(parent)
       local pTint = d.good and W.C.up or W.C.muted
       r.profit:SetTextColor(pTint[1], pTint[2], pTint[3])
       r.profit:SetText(profitNow > 0 and ns.Money(profitNow) or "-")
-      local single = isSingle(d)
+      local single = ns.DealIsSingle(d)
       if not r.buyQty:HasFocus() then
         r.buyQty:SetText(tostring(single and d.l.count or ns.DealBuyQty(d)))
       end
       r.buyQty:SetEnabled(not single)
-      r.buy:SetText(buttonText(d))
+      r.buy:SetText(ns.DealButtonText(d))
       -- Only busy while the game is answering; after a purchase it can buy again.
       r.buy:SetEnabled(ns.ahOpen == true and d.state ~= "locating" and d.state ~= "buying" and d.state ~= "quote")
       r:Show()
@@ -412,7 +371,6 @@ function ns.BuildDealsView(parent)
     local msg = ""
     if #list == 0 then
       if not ns.HasPrices() then msg = L.NO_PRICES
-      elseif self.mode == "search" then msg = L.SEARCH_EMPTY
       else msg = ns:NoDealsReason() end
     end
     empty:SetText(msg)

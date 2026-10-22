@@ -372,11 +372,20 @@ local function buildPlan(parent, view)
   f.compare:SetPoint("RIGHT", -170, 0)
   f.compare:SetWordWrap(true)
 
-  f.search = W.Button(f, "SEARCH_AH", 160, function() f:SearchAH() end)
+  f.search = W.Button(f, "CREATE_AH_LIST", 160, function() f:CreateList() end)
   f.search:SetPoint("BOTTOMRIGHT", 0, 0)
+
+  -- Checked reagents go to the shopping list. Until you change a box, the ones the plan
+  -- buys are checked. Vendor items are not sold at the Auction House.
+  local function canPick(e) return not e.vendor and type(e.id) == "number" end
+  local function picked(e)
+    if f.picked[e.id] ~= nil then return f.picked[e.id] end
+    return e.buy > 0
+  end
 
   function f:Open(key)
     self.key = key
+    self.picked = {}
     self.budgetValue = ns.db.settings.prof.budgetCopper
     self.budget:SetValue(self.budgetValue)
     self:Refresh()
@@ -393,8 +402,13 @@ local function buildPlan(parent, view)
     self.stat1:Set(ns.Money(GetMoney()))
     self.stat2:Set(ns.Money(plan.gold))
     self.stat3:Set(plan.minutes > 0 and ns.Duration(plan.minutes) or L.NONE)
-    local data = {}
+    local data, any = {}, false
     for _, e in ipairs(list) do
+      local check
+      if canPick(e) then
+        check = picked(e)
+        any = any or check
+      end
       local unit = e.unit and ns.Money(e.unit) or ns.Color("muted", "-")
       if e.method == "make" then unit = unit .. ns.Color(MUTED, "*") end
       data[#data + 1] = {
@@ -406,25 +420,38 @@ local function buildPlan(parent, view)
         },
         sort = { ns.ItemName(e.id), e.miss, e.unit, e.buy, e.farm, e.decision },
         onClick = function() view:ShowReagent(e) end,
+        check = check,
+        onCheck = function(_, on)
+          self.picked[e.id] = on
+          self:Refresh()
+        end,
       }
     end
     self.list:SetData(data, L.NOTHING_NEEDED)
     self.compare:SetText(L.COMPARE:format(ns.PlainMoney(plan.allBuy), ns.Duration(plan.allFarm)) .. "  " .. L.MAKE_NOTE)
-    self.search:SetEnabled(ns.ahOpen == true and ns.scan.state == "idle")
+    self.search:SetEnabled(any)
   end
 
-  -- Searches the items to buy and opens the Deals tab with the cheapest listing of each.
-  function f:SearchAH()
-    if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
-    local ids = {}
+  -- Puts the checked reagents on the Auction House shopping list. With the Auction House
+  -- open it also searches them and opens the panel's Professions tab.
+  function f:CreateList()
+    local items, ids = {}, {}
     for _, e in ipairs(self.list_ or {}) do
-      if e.buy and e.buy > 0 and not e.vendor and type(e.id) == "number" then ids[#ids + 1] = e.id end
+      if canPick(e) and picked(e) then
+        items[#items + 1] = { id = e.id, qty = e.buy > 0 and e.buy or e.miss }
+        ids[#ids + 1] = e.id
+      end
     end
-    if #ids == 0 then return end
-    ns:QuickSearch(ids, function()
-      ns.dealsMode = "search"
-      ns:ShowAuctionTab("deals")
-    end, true)
+    if #items == 0 then return end
+    ns:AddToShopping(items)
+    if not ns.ahOpen then
+      ns.Print(L.SHOPPING_ADDED:format(#items))
+      return
+    end
+    ns:ShowAuctionTab("shopping")
+    if ns.scan.state == "idle" then
+      ns:QuickSearch(ids, function() ns:Fire("SHOPPING") end)
+    end
   end
 
   return f

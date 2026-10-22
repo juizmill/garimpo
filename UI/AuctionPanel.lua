@@ -217,12 +217,12 @@ local function create()
   panel.scanStatus:SetPoint("RIGHT", panel.scanButton, "LEFT", -8, 0)
   panel.scanStatus:SetPoint("LEFT", title, "RIGHT", 10, 0)
 
-  -- Two tabs: posting your items, and deals to buy.
+  -- Tabs: posting your items, deals to buy, the professions shopping list, cancelling, ignored items.
   panel.tabs = W.Chips(panel, function(v) panel:SelectTab(v) end, "tab")
   panel.tabs:SetPoint("TOPLEFT", 10, -34)
   panel.tabs:SetItems({
     { value = "post", key = "AH_TAB_POST" }, { value = "deals", key = "TAB_DEALS" },
-    { value = "cancel", key = "AH_TAB_CANCEL" }, { value = "ignored", key = "AH_TAB_IGNORED" },
+    { value = "shopping", key = "AH_TAB_PROFESSION" }, { value = "cancel", key = "AH_TAB_CANCEL" }, { value = "ignored", key = "AH_TAB_IGNORED" },
   })
 
   -- Cancel your auctions by name and quantity, or the undercut ones.
@@ -261,11 +261,17 @@ local function create()
   panel.deals:SetPoint("BOTTOMRIGHT", -10, 22)
   panel.deals:Hide()
 
+  panel.shopping = ns.BuildShoppingView(panel)
+  panel.shopping:SetPoint("TOPLEFT", 10, -64)
+  panel.shopping:SetPoint("BOTTOMRIGHT", -10, 22)
+  panel.shopping:Hide()
+
   function panel:SelectTab(tab)
     self.tab = tab
     self.tabs:Select(tab)
     self.post:SetShown(tab == "post")
     self.deals:SetShown(tab == "deals")
+    self.shopping:SetShown(tab == "shopping")
     self.ignored:SetShown(tab == "ignored")
     self.cancel:SetShown(tab == "cancel")
     if tab == "cancel" then ns:QueryOwned() end
@@ -404,6 +410,7 @@ local function create()
     self.hold:SetChecked(ns.db.settings.showHold)
     self:UpdateNext()
     if self.deals:IsShown() then self.deals:Refresh() end
+    if self.shopping:IsShown() then self.shopping:Refresh() end
     if self.ignored:IsShown() then self.ignored:Refresh() end
     if self.cancel:IsShown() then self.cancel:Refresh() end
   end
@@ -414,7 +421,7 @@ local function create()
   return panel
 end
 
--- Opens the panel on a tab ("post" or "deals"), e.g. from "Search the AH" in Professions.
+-- Opens the panel on a tab, e.g. "shopping" from "Create AH list" in Professions.
 function ns:ShowAuctionTab(tab)
   if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
   ns:ShowAuctionPanel(true)
@@ -426,8 +433,14 @@ function ns:RefreshAuctionPanel()
 end
 
 function ns:RefreshDeals()
-  if panel and panel:IsShown() and panel.deals:IsShown() then panel.deals:Refresh() end
+  if not (panel and panel:IsShown()) then return end
+  if panel.deals:IsShown() then panel.deals:Refresh() end
+  if panel.shopping:IsShown() then panel.shopping:Refresh() end
 end
+
+ns:On("SHOPPING", function()
+  if panel and panel:IsShown() and panel.shopping:IsShown() then panel.shopping:Refresh() end
+end)
 
 function ns:ShowAuctionPanel(force)
   if not ns.ahOpen then return end

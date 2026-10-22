@@ -600,6 +600,45 @@ function ns:ProfessionNeeds(key)
   return list, target, skill
 end
 
+-- Shopping list (Auction House panel > Professions tab): { { id, qty } }, kept per character.
+-- Adding an item already on the list replaces its quantity.
+function ns:AddToShopping(items)
+  local list = self.char.shopping
+  for _, it in ipairs(items) do
+    local found
+    for _, e in ipairs(list) do
+      if e.id == it.id then found = e; break end
+    end
+    if found then found.qty = it.qty else list[#list + 1] = { id = it.id, qty = it.qty } end
+  end
+  self:Fire("SHOPPING")
+end
+
+-- remove: { [itemID] = true }
+function ns:RemoveFromShopping(remove)
+  local list = self.char.shopping
+  for i = #list, 1, -1 do
+    if remove[list[i].id] then table.remove(list, i) end
+  end
+  self:Fire("SHOPPING")
+end
+
+-- A purchase lowers what is still needed; the item leaves the list when nothing is left.
+function ns:ShoppingBought(id, qty)
+  local list = self.char.shopping
+  for i, e in ipairs(list) do
+    if e.id == id then
+      e.qty = e.qty - qty
+      if e.qty <= 0 then
+        table.remove(list, i)
+        ns.Print(ns.L.SHOPPING_DONE:format(ns.ItemName(id)))
+      end
+      break
+    end
+  end
+  self:Fire("SHOPPING")
+end
+
 -- Splits each reagent into buy and farm within a gold budget. Vendor items and
 -- items that cannot be farmed are always bought; the rest is bought in order of
 -- farming minutes saved per copper.
