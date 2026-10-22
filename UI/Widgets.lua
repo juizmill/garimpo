@@ -7,12 +7,14 @@ ns.W = W
 local FLAT = "Interface\\Buttons\\WHITE8X8"
 W.FLAT = FLAT
 
+-- Palette of the interface mockups: aged gold edges on dark brown.
 W.C = {
-  bg     = { 0.075, 0.062, 0.05, 1 },
-  bg2    = { 0.047, 0.04, 0.031, 1 },
-  panel  = { 0.13, 0.105, 0.08, 1 },
-  edge   = { 0.42, 0.33, 0.19, 1 },
-  line   = { 0.23, 0.18, 0.11, 1 },
+  bg     = { 0.09, 0.075, 0.059, 1 },     -- window inside
+  bg2    = { 0.047, 0.039, 0.031, 1 },    -- boxes, inputs
+  panel  = { 0.129, 0.106, 0.078, 1 },    -- active tab, header rows
+  edge   = { 0.42, 0.333, 0.188, 1 },     -- aged gold border
+  line   = { 0.227, 0.18, 0.11, 1 },      -- dividers
+  row    = { 0.133, 0.106, 0.071, 1 },    -- line under each table row
   gold   = { 1, 0.82, 0 },
   ink    = { 0.91, 0.88, 0.82 },
   muted  = { 0.6, 0.56, 0.49 },
@@ -23,7 +25,7 @@ W.C = {
 function W.Box(parent, bg, edge)
   local f = CreateFrame("Frame", nil, parent, "BackdropTemplate")
   f:SetBackdrop({ bgFile = FLAT, edgeFile = FLAT, edgeSize = 1 })
-  local b, e = bg or W.C.bg2, edge or W.C.line
+  local b, e = bg or W.C.bg2, edge or { 0.184, 0.149, 0.094, 1 }
   f:SetBackdropColor(b[1], b[2], b[3], b[4] or 1)
   f:SetBackdropBorderColor(e[1], e[2], e[3], e[4] or 1)
   return f
@@ -32,6 +34,8 @@ end
 function W.Font(parent, size, color, justify)
   local fs = parent:CreateFontString(nil, "OVERLAY")
   fs:SetFont(STANDARD_TEXT_FONT, size or 12, "")
+  fs:SetShadowColor(0, 0, 0, 0.9)
+  fs:SetShadowOffset(1, -1)
   local c = color or W.C.ink
   fs:SetTextColor(c[1], c[2], c[3])
   fs:SetJustifyH(justify or "LEFT")
@@ -72,12 +76,193 @@ function W.Line(parent)
   return t
 end
 
-function W.Button(parent, key, width, onClick)
-  local b = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
+-- Colors move toward their target over a few frames instead of jumping.
+local function mix(a, b, t)
+  return a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t, a[3] + (b[3] - a[3]) * t
+end
+
+-- Moves frame[field] toward goal (0..1), calling paint(frame) on each step.
+local function animate(frame, field, goal, paint, speed)
+  frame[field .. "Goal"] = goal
+  frame:SetScript("OnUpdate", function(self, elapsed)
+    local cur, g = self[field] or 0, self[field .. "Goal"]
+    local step = elapsed * (speed or 10)
+    cur = cur < g and math.min(g, cur + step) or math.max(g, cur - step)
+    self[field] = cur
+    paint(self)
+    if cur == g then self:SetScript("OnUpdate", nil) end
+  end)
+end
+W.Animate = animate
+
+-- Gradient on a texture from color `from` (bottom or left) to `to` (top or right),
+-- { r, g, b, a } each; new and old client APIs.
+function W.Gradient(tex, orientation, from, to)
+  tex:SetTexture(FLAT)
+  local a1, a2 = from[4] or 1, to[4] or 1
+  if CreateColor and pcall(tex.SetGradient, tex, orientation,
+    CreateColor(from[1], from[2], from[3], a1), CreateColor(to[1], to[2], to[3], a2)) then return end
+  if tex.SetGradientAlpha then
+    tex:SetGradientAlpha(orientation, from[1], from[2], from[3], a1, to[1], to[2], to[3], a2)
+  end
+end
+
+local function mixColor(a, b, t)
+  local r, g, bl = mix(a, b, t)
+  return { r, g, bl, 1 }
+end
+
+local BUTTON_STYLES = {
+  normal = {
+    top = { 0.227, 0.188, 0.141 }, bottom = { 0.129, 0.102, 0.071 },
+    topHover = { 0.31, 0.255, 0.18 }, bottomHover = { 0.18, 0.14, 0.094 },
+    text = { 1, 0.82, 0 }, textHover = { 1, 0.9, 0.45 },
+  },
+  primary = {
+    top = { 0.545, 0.102, 0.063 }, bottom = { 0.302, 0.043, 0.024 },
+    topHover = { 0.67, 0.15, 0.09 }, bottomHover = { 0.4, 0.06, 0.035 },
+    text = { 1, 0.82, 0 }, textHover = { 1, 0.93, 0.6 },
+  },
+  danger = {
+    top = { 0.227, 0.188, 0.141 }, bottom = { 0.129, 0.102, 0.071 },
+    topHover = { 0.545, 0.102, 0.063 }, bottomHover = { 0.302, 0.043, 0.024 },
+    text = { 1, 0.82, 0 }, textHover = { 1, 0.93, 0.6 },
+  },
+}
+
+local function paintButton(b)
+  local st = BUTTON_STYLES[b.style] or BUTTON_STYLES.normal
+  if not b:IsEnabled() then
+    W.Gradient(b.fill, "VERTICAL", { 0.07, 0.06, 0.045 }, { 0.11, 0.09, 0.07 })
+    b.text:SetTextColor(W.C.muted[1], W.C.muted[2], W.C.muted[3], 0.6)
+    b.shine:SetAlpha(0.05)
+    return
+  end
+  local t = b.hover or 0
+  W.Gradient(b.fill, "VERTICAL", mixColor(st.bottom, st.bottomHover, t), mixColor(st.top, st.topHover, t))
+  local r, g, bl = mix(st.text, st.textHover, t)
+  b.text:SetTextColor(r, g, bl, 1)
+  b.shine:SetAlpha(0.2)
+end
+
+-- Button of the mockups: gradient with gold text and a black edge. style: "normal"
+-- (brown, default), "primary" (red, the main action of a screen) or "danger" (brown,
+-- turns red on hover). Callers that add tooltips use HookScript so the hover effect
+-- keeps working.
+function W.Button(parent, key, width, onClick, style)
+  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
   b:SetSize(width or 110, 22)
+  b:SetBackdrop({ bgFile = FLAT, edgeFile = FLAT, edgeSize = 1 })
+  b:SetBackdropColor(0, 0, 0, 1)
+  b:SetBackdropBorderColor(0, 0, 0, 1)
+  b.style = style or "normal"
+  b.fill = b:CreateTexture(nil, "BACKGROUND", nil, 1)
+  b.fill:SetPoint("TOPLEFT", 1, -1)
+  b.fill:SetPoint("BOTTOMRIGHT", -1, 1)
+  -- Thin light line along the top edge.
+  b.shine = b:CreateTexture(nil, "ARTWORK")
+  b.shine:SetTexture(FLAT)
+  b.shine:SetVertexColor(1, 1, 1, 1)
+  b.shine:SetPoint("TOPLEFT", 1, -1)
+  b.shine:SetPoint("TOPRIGHT", -1, -1)
+  b.shine:SetHeight(1)
+  b.text = W.Font(b, 12, W.C.gold, "CENTER")
+  b.text:SetPoint("LEFT", 4, 0)
+  b.text:SetPoint("RIGHT", -4, 0)
+  b:SetFontString(b.text)
+  b:SetPushedTextOffset(0, -1)
   if key then W.Label(b, key) end
   if onClick then b:SetScript("OnClick", onClick) end
+  b:SetScript("OnEnter", function(self) animate(self, "hover", 1, paintButton, 8) end)
+  b:SetScript("OnLeave", function(self) animate(self, "hover", 0, paintButton, 5) end)
+  b:SetScript("OnEnable", paintButton)
+  b:SetScript("OnDisable", paintButton)
+  function b:SetStyle(name)
+    self.style = name
+    paintButton(self)
+  end
+  paintButton(b)
   return b
+end
+
+-- Close button of the mockups: small red square with a light x.
+function W.Close(parent, onClick)
+  local b = CreateFrame("Button", nil, parent, "BackdropTemplate")
+  b:SetSize(18, 18)
+  b:SetBackdrop({ bgFile = FLAT, edgeFile = FLAT, edgeSize = 1 })
+  local lines = {}
+  for i, angle in ipairs({ math.pi / 4, -math.pi / 4 }) do
+    local t = b:CreateTexture(nil, "ARTWORK")
+    t:SetTexture(FLAT)
+    t:SetSize(10, 1.5)
+    t:SetPoint("CENTER")
+    t:SetRotation(angle)
+    lines[i] = t
+  end
+  local function paint(self)
+    local h = self.hover or 0
+    self:SetBackdropColor(mix({ 0.36, 0.063, 0.063 }, { 0.6, 0.1, 0.08 }, h))
+    self:SetBackdropBorderColor(mix({ 0.64, 0.2, 0.2 }, { 1, 0.4, 0.35 }, h))
+    for _, t in ipairs(lines) do t:SetVertexColor(1, 0.87, 0.87, 1) end
+  end
+  b:SetScript("OnEnter", function(self) animate(self, "hover", 1, paint, 8) end)
+  b:SetScript("OnLeave", function(self) animate(self, "hover", 0, paint, 5) end)
+  b:SetScript("OnClick", onClick or function() parent:Hide() end)
+  paint(b)
+  return b
+end
+
+-- Fades the frame in each time it is shown.
+function W.FadeIn(frame, duration)
+  local ag = frame:CreateAnimationGroup()
+  local a = ag:CreateAnimation("Alpha")
+  a:SetFromAlpha(0)
+  a:SetToAlpha(1)
+  a:SetDuration(duration or 0.15)
+  if a.SetSmoothing then a:SetSmoothing("OUT") end
+  frame:HookScript("OnShow", function() ag:Stop(); ag:Play() end)
+  return ag
+end
+
+-- Window look of the mockups: dark inside with a slightly lighter top, 2px aged gold
+-- border, and a title bar of `height` pixels with a black line under it.
+function W.Window(frame, height)
+  frame:SetBackdrop({ bgFile = FLAT, edgeFile = FLAT, edgeSize = 2 })
+  frame:SetBackdropColor(W.C.bg[1], W.C.bg[2], W.C.bg[3], 1)
+  frame:SetBackdropBorderColor(W.C.edge[1], W.C.edge[2], W.C.edge[3], 1)
+  local glow = frame:CreateTexture(nil, "BACKGROUND", nil, 1)
+  glow:SetPoint("TOPLEFT", 2, -2)
+  glow:SetPoint("BOTTOMRIGHT", -2, 2)
+  W.Gradient(glow, "VERTICAL", W.C.bg, { 0.11, 0.09, 0.07, 1 })
+  local bar = frame:CreateTexture(nil, "BACKGROUND", nil, 2)
+  bar:SetPoint("TOPLEFT", 2, -2)
+  bar:SetPoint("TOPRIGHT", -2, -2)
+  bar:SetHeight(height - 2)
+  W.Gradient(bar, "VERTICAL", { 0.102, 0.082, 0.055, 1 }, { 0.18, 0.145, 0.086, 1 })
+  local line = frame:CreateTexture(nil, "BACKGROUND", nil, 3)
+  line:SetTexture(FLAT)
+  line:SetVertexColor(0, 0, 0, 1)
+  line:SetPoint("TOPLEFT", bar, "BOTTOMLEFT")
+  line:SetPoint("TOPRIGHT", bar, "BOTTOMRIGHT")
+  line:SetHeight(1)
+  -- Thin black line outside the gold border.
+  local shadow = CreateFrame("Frame", nil, frame, "BackdropTemplate")
+  shadow:SetPoint("TOPLEFT", -1, 1)
+  shadow:SetPoint("BOTTOMRIGHT", 1, -1)
+  shadow:SetBackdrop({ edgeFile = FLAT, edgeSize = 1 })
+  shadow:SetBackdropBorderColor(0, 0, 0, 1)
+end
+
+-- Gold-edged frame around a window's title icon.
+function W.IconFrame(icon)
+  local parent = icon:GetParent()
+  local t = parent:CreateTexture(nil, "BORDER")
+  t:SetTexture(FLAT)
+  t:SetVertexColor(W.C.edge[1], W.C.edge[2], W.C.edge[3], 1)
+  t:SetPoint("TOPLEFT", icon, "TOPLEFT", -1, 1)
+  t:SetPoint("BOTTOMRIGHT", icon, "BOTTOMRIGHT", 1, -1)
+  icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
+  return t
 end
 
 -- Small header + value box used in summary rows.
@@ -87,7 +272,7 @@ function W.Stat(parent, key, width)
   box.label = W.Font(box, 10, W.C.muted)
   box.label:SetPoint("TOPLEFT", 8, -6)
   W.Label(box.label, key)
-  box.value = W.Font(box, 13, W.C.ink)
+  box.value = W.Font(box, 14, W.C.ink)
   box.value:SetPoint("BOTTOMLEFT", 8, 6)
   box.value:SetPoint("RIGHT", -6, 0)
   function box:Set(text, color)
@@ -104,13 +289,14 @@ function W.Chips(parent, onSelect, style)
   g.buttons, g.items = {}, {}
   local height = style == "tab" and 24 or 20
 
-  local function styleButton(b, on)
-    local c = on and W.C.gold or W.C.muted
-    b.text:SetTextColor(c[1], c[2], c[3])
-    local bg = on and W.C.panel or W.C.bg2
-    b:SetBackdropColor(bg[1], bg[2], bg[3], 1)
-    local e = on and W.C.edge or W.C.line
-    b:SetBackdropBorderColor(e[1], e[2], e[3], 1)
+  -- Off: dark with a muted label; hover: lighter label and gold edge; on: gold label.
+  local OFF = { 0.071, 0.059, 0.043 }
+  local function styleButton(b)
+    local on = b.value == g.value
+    local hover = on and 1 or (b.hover or 0)
+    b.text:SetTextColor(mix(W.C.muted, on and W.C.gold or W.C.ink, hover))
+    b:SetBackdropColor(mix(OFF, W.C.panel, on and 1 or 0))
+    b:SetBackdropBorderColor(mix(W.C.line, W.C.edge, style == "tab" and (on and 0.4 or 0) or hover))
   end
 
   function g:Layout()
@@ -137,6 +323,8 @@ function W.Chips(parent, onSelect, style)
         b.text = W.Font(b, style == "tab" and 12 or 11, W.C.muted, "CENTER")
         b.text:SetPoint("CENTER")
         b:SetScript("OnClick", function(btn) g:Select(btn.value, true) end)
+        b:SetScript("OnEnter", function(btn) animate(btn, "hover", 1, styleButton, 8) end)
+        b:SetScript("OnLeave", function(btn) animate(btn, "hover", 0, styleButton, 5) end)
         self.buttons[i] = b
       end
       b.value = it.value
@@ -152,7 +340,7 @@ function W.Chips(parent, onSelect, style)
   function g:Select(value, fire)
     self.value = value
     for i, b in ipairs(self.buttons) do
-      if i <= #self.items then styleButton(b, b.value == value) end
+      if i <= #self.items then styleButton(b) end
     end
     if fire and onSelect then onSelect(value) end
   end
@@ -166,9 +354,21 @@ function W.Chips(parent, onSelect, style)
   return g
 end
 
+local function paintEdit(e)
+  local enabled = e:IsEnabled()
+  local edge = e:HasFocus() and W.C.gold or (e.hover and W.C.edge or W.C.line)
+  e:SetBackdropColor(W.C.bg2[1], W.C.bg2[2], W.C.bg2[3], 1)
+  e:SetBackdropBorderColor(edge[1], edge[2], edge[3], 1)
+  e:SetAlpha(enabled and 1 or 0.5)
+end
+
 function W.Edit(parent, width, onChange)
-  local e = CreateFrame("EditBox", nil, parent, "InputBoxTemplate")
+  local e = CreateFrame("EditBox", nil, parent, "BackdropTemplate")
   e:SetSize(width or 50, 20)
+  e:SetBackdrop({ bgFile = FLAT, edgeFile = FLAT, edgeSize = 1 })
+  e:SetFont(STANDARD_TEXT_FONT, 12, "")
+  e:SetTextColor(W.C.ink[1], W.C.ink[2], W.C.ink[3])
+  e:SetTextInsets(5, 5, 0, 0)
   e:SetAutoFocus(false)
   e:SetJustifyH("RIGHT")
   e:SetScript("OnEnterPressed", e.ClearFocus)
@@ -176,6 +376,16 @@ function W.Edit(parent, width, onChange)
   e:SetScript("OnTextChanged", function(self, userInput)
     if userInput and onChange then onChange(self:GetText()) end
   end)
+  e:SetScript("OnEditFocusGained", function(self) self:HighlightText(); paintEdit(self) end)
+  e:SetScript("OnEditFocusLost", function(self) self:HighlightText(0, 0); paintEdit(self) end)
+  e:SetScript("OnEnter", function(self) self.hover = true; paintEdit(self) end)
+  e:SetScript("OnLeave", function(self) self.hover = nil; paintEdit(self) end)
+  local setEnabled = e.SetEnabled
+  function e:SetEnabled(on)
+    setEnabled(self, on)
+    paintEdit(self)
+  end
+  paintEdit(e)
   return e
 end
 
@@ -230,25 +440,129 @@ function W.Money(parent, onChange)
   return f
 end
 
-function W.Check(parent, key, onClick)
-  local c = CreateFrame("CheckButton", nil, parent, "UICheckButtonTemplate")
-  c:SetSize(22, 22)
-  c.label = W.Font(c, 12, W.C.ink)
-  c.label:SetPoint("LEFT", c, "RIGHT", 2, 0)
-  W.Label(c.label, key)
-  c:SetScript("OnClick", function(self) onClick(self:GetChecked() and true or false) end)
+local function paintCheck(c)
+  local edge = c.hover and W.C.gold or W.C.edge
+  c:SetBackdropColor(W.C.bg2[1], W.C.bg2[2], W.C.bg2[3], 1)
+  c:SetBackdropBorderColor(edge[1], edge[2], edge[3], 1)
+end
+
+-- Checkbox of the mockups: a small square that fills with gold. onClick(checked) runs on
+-- the player's click.
+function W.CheckBox(parent, onClick)
+  local c = CreateFrame("CheckButton", nil, parent, "BackdropTemplate")
+  c:SetSize(14, 14)
+  c:SetHitRectInsets(-4, -4, -4, -4)
+  c:SetBackdrop({ bgFile = FLAT, edgeFile = FLAT, edgeSize = 1 })
+  local fill = c:CreateTexture(nil, "ARTWORK")
+  fill:SetTexture(FLAT)
+  fill:SetVertexColor(1, 0.82, 0, 1)
+  fill:SetPoint("TOPLEFT", 3, -3)
+  fill:SetPoint("BOTTOMRIGHT", -3, 3)
+  c:SetCheckedTexture(fill)
+  c:SetScript("OnEnter", function(self) self.hover = true; paintCheck(self) end)
+  c:SetScript("OnLeave", function(self) self.hover = nil; paintCheck(self) end)
+  c:SetScript("OnClick", function(self)
+    if onClick then onClick(self:GetChecked() and true or false) end
+  end)
+  paintCheck(c)
   return c
 end
 
+-- Checkbox with a label; clicking the label toggles it too.
+function W.Check(parent, key, onClick)
+  local c = W.CheckBox(parent, onClick)
+  c.label = W.Font(c, 12, W.C.ink)
+  c.label:SetPoint("LEFT", c, "RIGHT", 6, 0)
+  W.Label(c.label, key)
+  local function fitHit()
+    c:SetHitRectInsets(-3, -(c.label:GetStringWidth() + 9), -3, -3)
+  end
+  fitHit()
+  W.OnRelabel(fitHit)
+  return c
+end
+
+-- Scroll frame with a slim bar and smooth mouse-wheel scrolling. Anchor it like the
+-- game's scroll frame: the bar sits in the 24 pixels to its right.
+function W.Scroll(parent)
+  local sf = CreateFrame("ScrollFrame", nil, parent)
+  sf:EnableMouseWheel(true)
+  local bar = CreateFrame("Slider", nil, sf)
+  bar:SetPoint("TOPLEFT", sf, "TOPRIGHT", 9, 0)
+  bar:SetPoint("BOTTOMLEFT", sf, "BOTTOMRIGHT", 9, 0)
+  bar:SetWidth(7)
+  bar:SetOrientation("VERTICAL")
+  bar:SetMinMaxValues(0, 0)
+  bar:SetValue(0)
+  local track = bar:CreateTexture(nil, "BACKGROUND")
+  track:SetAllPoints()
+  track:SetTexture(FLAT)
+  track:SetVertexColor(W.C.bg2[1], W.C.bg2[2], W.C.bg2[3], 1)
+  local thumb = bar:CreateTexture(nil, "ARTWORK")
+  thumb:SetTexture(FLAT)
+  thumb:SetSize(7, 30)
+  bar:SetThumbTexture(thumb)
+  local function paintThumb(self)
+    local r, g, b = mix(W.C.edge, { 0.85, 0.68, 0.2 }, self.hover or 0)
+    thumb:SetVertexColor(r, g, b, 1)
+  end
+  bar:SetScript("OnEnter", function(self) animate(self, "hover", 1, paintThumb, 8) end)
+  bar:SetScript("OnLeave", function(self) animate(self, "hover", 0, paintThumb, 5) end)
+  paintThumb(bar)
+  bar:Hide()
+  sf.bar = bar
+
+  local syncing = false
+  bar:SetScript("OnValueChanged", function(_, v)
+    if syncing then return end
+    sf.target = nil
+    sf:SetScript("OnUpdate", nil)
+    sf:SetVerticalScroll(v)
+  end)
+  sf:SetScript("OnVerticalScroll", function(_, offset)
+    syncing = true
+    bar:SetValue(offset)
+    syncing = false
+  end)
+  sf:SetScript("OnScrollRangeChanged", function(self, _, yrange)
+    yrange = math.max(0, yrange or self:GetVerticalScrollRange())
+    bar:SetMinMaxValues(0, yrange)
+    local h = self:GetHeight()
+    thumb:SetHeight(math.max(24, h > 0 and h * h / (h + yrange) or 24))
+    bar:SetShown(yrange > 0.5)
+    if self.target and self.target > yrange then self.target = yrange end
+    if self:GetVerticalScroll() > yrange then self:SetVerticalScroll(yrange) end
+  end)
+  local function glide(self, elapsed)
+    local cur, goal = self:GetVerticalScroll(), self.target or 0
+    local nv = cur + (goal - cur) * math.min(1, elapsed * 14)
+    if math.abs(goal - nv) < 0.5 then
+      nv = goal
+      self.target = nil
+      self:SetScript("OnUpdate", nil)
+    end
+    self:SetVerticalScroll(nv)
+  end
+  sf:SetScript("OnMouseWheel", function(self, delta)
+    local range = self:GetVerticalScrollRange()
+    if range <= 0 then return end
+    local goal = (self.target or self:GetVerticalScroll()) - delta * 60
+    self.target = math.max(0, math.min(range, goal))
+    self:SetScript("OnUpdate", glide)
+  end)
+  return sf
+end
+
 function W.Bar(parent, width, height, color)
-  local bar = W.Box(parent, { 0.04, 0.035, 0.03, 1 }, { 0.17, 0.14, 0.09, 1 })
+  local bar = W.Box(parent, { 0.043, 0.035, 0.027, 1 }, { 0.173, 0.141, 0.086, 1 })
   bar:SetSize(width, height)
   local fill = bar:CreateTexture(nil, "ARTWORK")
   fill:SetTexture(FLAT)
   fill:SetPoint("TOPLEFT", 1, -1)
   fill:SetPoint("BOTTOMLEFT", 1, 1)
   local c = color or W.C.gold
-  fill:SetVertexColor(c[1], c[2], c[3], 1)
+  local dark = color and { c[1] * 0.35, c[2] * 0.35, c[3] * 0.35, 1 } or { 0.54, 0.416, 0.07, 1 }
+  W.Gradient(fill, "HORIZONTAL", dark, { c[1], c[2], c[3], 1 })
   function bar:SetValue(frac)
     frac = math.max(0, math.min(1, frac or 0))
     fill:SetWidth(math.max(0.001, (self:GetWidth() - 2) * frac))
@@ -379,7 +693,7 @@ function W.List(parent, cols, rowHeight)
   line:SetPoint("BOTTOMLEFT")
   line:SetPoint("BOTTOMRIGHT")
 
-  local sf = CreateFrame("ScrollFrame", nil, list, "UIPanelScrollFrameTemplate")
+  local sf = W.Scroll(list)
   sf:SetPoint("TOPLEFT", 0, -20)
   sf:SetPoint("BOTTOMRIGHT", -24, 0)
   local child = CreateFrame("Frame", nil, sf)
@@ -401,10 +715,16 @@ function W.List(parent, cols, rowHeight)
     r.bg = r:CreateTexture(nil, "BACKGROUND")
     r.bg:SetAllPoints()
     r.bg:SetTexture(FLAT)
+    local sep = r:CreateTexture(nil, "BACKGROUND", nil, 1)
+    sep:SetTexture(FLAT)
+    sep:SetVertexColor(W.C.row[1], W.C.row[2], W.C.row[3], 1)
+    sep:SetPoint("BOTTOMLEFT")
+    sep:SetPoint("BOTTOMRIGHT")
+    sep:SetHeight(1)
     local hl = r:CreateTexture(nil, "HIGHLIGHT")
     hl:SetAllPoints()
     hl:SetTexture(FLAT)
-    hl:SetVertexColor(1, 1, 1, 0.05)
+    hl:SetVertexColor(1, 0.82, 0, 0.06)
     r.cells, r.bars = {}, {}
     for c, col in ipairs(cols) do
       if col.bar then
@@ -497,15 +817,14 @@ function W.List(parent, cols, rowHeight)
       local x0 = col.x
       if d.check ~= nil then
         if not r.check then
-          r.check = CreateFrame("CheckButton", nil, r, "UICheckButtonTemplate")
-          r.check:SetSize(20, 20)
-          r.check:SetScript("OnClick", function(self)
+          r.check = W.CheckBox(r)
+          r.check:HookScript("OnClick", function(self)
             local rd = self:GetParent().data
             if rd and rd.onCheck then rd.onCheck(rd, self:GetChecked() and true or false) end
           end)
         end
         r.check:ClearAllPoints()
-        r.check:SetPoint(anchor, r, anchor, col.x - 2, yoff)
+        r.check:SetPoint(anchor, r, anchor, col.x, col.wrap and -5 or 0)
         r.check:SetChecked(d.check)
         r.check:Show()
         x0 = col.x + 20

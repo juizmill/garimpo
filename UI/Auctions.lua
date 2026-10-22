@@ -542,12 +542,13 @@ function ns.BuildCancelView(parent)
   end)
   cancelBtn:SetPoint("RIGHT", undercutBtn, "LEFT", -6, 0)
   for btn, tip in pairs({ [cancelBtn] = "CANCEL_TIP", [undercutBtn] = "UNDERCUT_TIP" }) do
-    btn:SetScript("OnEnter", function(self)
+    btn:SetStyle("danger")
+    btn:HookScript("OnEnter", function(self)
       GameTooltip:SetOwner(self, "ANCHOR_TOP")
       GameTooltip:SetText(L[tip], 1, 1, 1, 1, true)
       GameTooltip:Show()
     end)
-    btn:SetScript("OnLeave", GameTooltip_Hide)
+    btn:HookScript("OnLeave", GameTooltip_Hide)
   end
 
   local list = W.List(f, {

@@ -2,6 +2,7 @@
 
 ## 0.3.9
 
+- Visual novo, seguindo os mockups da interface: janelas com borda dourada e barra de título escura, botões próprios (vermelho com texto dourado nas ações principais, marrom nas demais), fechar em quadrado vermelho, abas e filtros escuros que ficam dourados quando ativos, caixas de seleção que enchem de dourado, campos de texto e barra de rolagem finos, linhas das tabelas com divisória. Hover com transição suave, rolagem suave pela roda do mouse e as telas aparecem com fade.
 - Painel do Leilão: nova aba **Profissão**, entre Ofertas e Cancelar, com a lista de compras dos reagentes. A lista fica salva por personagem, tem caixas de seleção com "Selecionar todos", botão **X** para remover um item e **Remover marcados**. Comprar desconta da lista. Clicar no nome (ou em "Localizar") abre logo abaixo do item a lista dos leilões encontrados, com vendedor, preço, quantidade e total; equipamentos podem ser comprados leilão a leilão. O modo "Lista de compras" da aba Ofertas saiu.
 - Profissões > Comprar ou farmar: caixa de seleção em cada reagente do Leilão; o botão "Buscar no Leilão" virou **Criar lista do leilão** e manda só os marcados para a aba Profissão.
 - Cancelar: as caixas de nome e quantidade viraram uma caixa de seleção em cada leilão, mais "Selecionar todos". "Cancelar marcados" cancela os marcados; "Cancelar cortados" sempre cancela todos os cortados.

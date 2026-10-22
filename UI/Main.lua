@@ -57,8 +57,11 @@ local function create()
   main.subtitle = W.Font(main, 12, W.C.muted)
   main.subtitle:SetPoint("LEFT", title, "RIGHT", 8, 0)
 
-  local close = CreateFrame("Button", nil, main, "UIPanelCloseButton")
-  close:SetPoint("TOPRIGHT", 0, 0)
+  local close = W.Close(main)
+  close:SetPoint("TOPRIGHT", -6, -7)
+  W.Window(main, 34)
+  W.IconFrame(icon)
+  W.FadeIn(main)
 
   main.tabs = W.Chips(main, function(v) ns:ShowView(v) end, "tab")
   main.tabs:SetPoint("TOPLEFT", 12, -38)
@@ -88,6 +91,7 @@ function ns:ShowView(name)
   if not v.frame then
     v.frame = v.build(main.content)
     v.frame:SetAllPoints(main.content)
+    W.FadeIn(v.frame, 0.12)
   end
   main.current = name
   main.tabs:Select(name)

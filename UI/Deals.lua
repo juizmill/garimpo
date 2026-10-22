@@ -117,7 +117,7 @@ local function makeRow(parent, i)
 
   r.buy = W.Button(r, nil, BUY_W, function()
     if r.deal then ns:BuyDeal(r.deal) end
-  end)
+  end, "primary")
   r.buy:SetHeight(20)
   r.buy:SetPoint("RIGHT", -2, 0)
   -- Units to buy (commodities); items are bought one auction at a time.
@@ -226,7 +226,7 @@ function ns.BuildDealsView(parent)
   line:SetPoint("BOTTOMLEFT")
   line:SetPoint("BOTTOMRIGHT")
 
-  local sf = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
+  local sf = W.Scroll(f)
   sf:SetPoint("TOPLEFT", 0, -94)
   sf:SetPoint("BOTTOMRIGHT", -24, 30)
   local child = CreateFrame("Frame", nil, sf)

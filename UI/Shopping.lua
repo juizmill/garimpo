@@ -48,12 +48,10 @@ local function makeRow(parent, view)
   r.bg:SetAllPoints()
   r.bg:SetTexture(W.FLAT)
 
-  r.check = CreateFrame("CheckButton", nil, r, "UICheckButtonTemplate")
-  r.check:SetSize(20, 20)
-  r.check:SetPoint("LEFT", 0, 0)
-  r.check:SetScript("OnClick", function(self)
-    if r.entry then view:SetChecked(r.entry.id, self:GetChecked() and true or false) end
+  r.check = W.CheckBox(r, function(on)
+    if r.entry then view:SetChecked(r.entry.id, on) end
   end)
+  r.check:SetPoint("LEFT", 2, 0)
   -- + / - : opens the item's auctions under the row.
   r.arrow = W.Font(r, 13, W.C.gold, "CENTER")
   r.arrow:SetPoint("LEFT", 20, 0)
@@ -62,18 +60,16 @@ local function makeRow(parent, view)
   r.icon:SetSize(18, 18)
   r.icon:SetPoint("LEFT", 34, 0)
 
-  r.remove = W.Button(r, nil, 24, function()
+  r.remove = W.Close(r, function()
     if r.entry then ns:RemoveFromShopping({ [r.entry.id] = true }) end
   end)
-  r.remove:SetHeight(20)
-  r.remove:SetText("X")
   r.remove:SetPoint("RIGHT", -COL.remove, 0)
-  r.remove:SetScript("OnEnter", function(self)
+  r.remove:HookScript("OnEnter", function(self)
     GameTooltip:SetOwner(self, "ANCHOR_TOP")
     GameTooltip:SetText(L.SHOPPING_REMOVE)
     GameTooltip:Show()
   end)
-  r.remove:SetScript("OnLeave", GameTooltip_Hide)
+  r.remove:HookScript("OnLeave", GameTooltip_Hide)
   r.buy = W.Button(r, nil, 100, function()
     if not r.deal then return end
     -- Locating opens the row to show what the search finds.
@@ -81,7 +77,7 @@ local function makeRow(parent, view)
       view:SetOpen(r.entry.id, true)
     end
     ns:BuyDeal(r.deal)
-  end)
+  end, "primary")
   r.buy:SetHeight(20)
   r.buy:SetPoint("RIGHT", -COL.buy, 0)
   -- Units to buy (commodities); items are bought one auction at a time.
@@ -145,7 +141,7 @@ local function makeSub(parent)
   end
   s.buy = W.Button(s, nil, 100, function()
     if s.deal then ns:BuyDeal(s.deal) end
-  end)
+  end, "primary")
   s.buy:SetHeight(18)
   s.buy:SetPoint("RIGHT", -COL.buy, 0)
   return s
@@ -171,7 +167,7 @@ function ns.BuildShoppingView(parent)
     for id in pairs(checked) do gone[id] = true end
     wipe(checked)
     ns:RemoveFromShopping(gone)
-  end)
+  end, "danger")
   remove:SetPoint("TOPRIGHT", 0, 0)
   -- Searches every item on the list: real prices and quantities, and auction IDs so each
   -- one buys with a single click.
@@ -200,7 +196,7 @@ function ns.BuildShoppingView(parent)
   line:SetPoint("BOTTOMLEFT")
   line:SetPoint("BOTTOMRIGHT")
 
-  local sf = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
+  local sf = W.Scroll(f)
   sf:SetPoint("TOPLEFT", 0, -48)
   sf:SetPoint("BOTTOMRIGHT", -24, 30)
   local child = CreateFrame("Frame", nil, sf)

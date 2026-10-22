@@ -9,7 +9,7 @@ ns:RegisterView("config", function(parent)
   local f = CreateFrame("Frame", nil, parent)
   local S = function() return ns.db.settings end
 
-  local sf = CreateFrame("ScrollFrame", nil, f, "UIPanelScrollFrameTemplate")
+  local sf = W.Scroll(f)
   sf:SetPoint("TOPLEFT", 0, 0)
   sf:SetPoint("BOTTOMRIGHT", -24, 30)
   local c = CreateFrame("Frame", nil, sf)

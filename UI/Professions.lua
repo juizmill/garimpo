@@ -372,7 +372,7 @@ local function buildPlan(parent, view)
   f.compare:SetPoint("RIGHT", -170, 0)
   f.compare:SetWordWrap(true)
 
-  f.search = W.Button(f, "CREATE_AH_LIST", 160, function() f:CreateList() end)
+  f.search = W.Button(f, "CREATE_AH_LIST", 160, function() f:CreateList() end, "primary")
   f.search:SetPoint("BOTTOMRIGHT", 0, 0)
 
   -- Checked reagents go to the shopping list. Until you change a box, the ones the plan
