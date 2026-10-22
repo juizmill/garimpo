@@ -20,13 +20,13 @@ Venda, scan e ofertas ficam juntos nesta seção.
 
 | Opção | Padrão | O que faz |
 |---|---|---|
-| Abrir o painel junto com o Leilão | Ligado | Mostra o painel do Garimpo (Postar e Ofertas) ao abrir a Casa de Leilão. |
+| Abrir o painel junto com o Leilão | Ligado | Mostra o painel do Garimpo ao abrir a Casa de Leilão. |
 | Scan completo ao abrir o Leilão | Ligado | Começa um scan completo ao abrir a Casa de Leilão quando o último tem mais de 30 minutos. |
 | Tipo de Leilão | Facção (5%) | Quanto o Leilão fica de cada venda: Facção (5%) ou Neutro (15%, como Angra do Butim). Vale para o lucro e para as ofertas. |
 | Duração padrão | 24h | 12h, 24h ou 48h. |
 | Margem de venda | 0% | Quanto acima do menor preço do Leilão postar. 0% = menor preço, 100% = dobro, negativo = mais barato. |
 | Lance inicial | 95% | Lance dos itens que aceitam lance, em % do arremate. |
-| Ignorar cortes abaixo do mercado em | 20% | Na aba Cancelar, um corte mais de X% abaixo do valor de mercado (média de 7 dias) aparece como **Muito abaixo**, com aviso no chat, e "Cancelar cortados" pula ele. |
+| Ignorar cortes abaixo do mercado em | 20% | Na aba Cancelar, um corte mais de X% abaixo do valor de mercado (média de 7 dias) aparece como **Muito abaixo**, com aviso no chat, e "Cancelar cortados" o ignora. |
 | Ofertas: lucro desejado (spread) | 20% | Lucro sobre o que você paga, já tirando a taxa do Leilão. Preço máximo de compra = *mercado × (1 − taxa) ÷ (1 + spread)*. |
 | Ofertas: lucro mínimo | 1g | Esconde ofertas que renderiam menos que isso no total. Aceita ouro, prata e cobre. |
 | Ofertas: quantidade a comprar | 10 | Valor inicial da caixa de quantidade ao lado do Comprar (mercadorias vendidas por unidade). |

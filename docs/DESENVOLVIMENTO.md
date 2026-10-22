@@ -83,7 +83,7 @@ Sem cliente do jogo, dá para checar a sintaxe e os textos com Python:
 
 ```
 pip install luaparser
-python tools/checklua.py .     # sintaxe de todos os .lua
+python tools/checklua.py .     # sintaxe de todos os .lua e textos "..." quebrados em duas linhas
 python tools/checkkeys.py .    # chaves usadas x definidas nas duas línguas
 ```
 

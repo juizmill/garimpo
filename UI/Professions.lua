@@ -215,6 +215,7 @@ local function buildRoute(parent, view)
           d.cells[2] = text
           d.cells[3] = r.status ~= "done" and ns.Money(r.cost) or ""
           d.icon, d.iconCol = optionIcon(o), 2
+          d.searchID = o.crafts[1].icon
           local cheapest = #s.options > 1 and r.cost ~= nil
           if r.status == "done" then d.cells[4] = W.Pill("done")
           elseif r.status == "current" then d.cells[4] = W.Pill("current")
@@ -239,6 +240,7 @@ local function buildRoute(parent, view)
           for _, id in ipairs(s.items or {}) do best = math.max(best, ns.Market(id) or 0) end
           d.cells[3] = best > 0 and ns.Money(best) or ""
           d.icon, d.iconCol = s.items and ns.ItemIcon(s.items[1]) or nil, 2
+          d.searchID = s.items and s.items[1]
           d.cells[4] = r.status == "done" and W.Pill("done") or (r.status == "current" and W.Pill("current") or "")
           local zone = ns:FirstZone(s.zones)
           d.tip = { ns.ZoneName(zone), itemsText(s.items), ns.Color("gold", L.CLICK_TO_MARK) }

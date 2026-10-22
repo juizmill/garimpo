@@ -212,6 +212,84 @@ function W.Close(parent, onClick)
   return b
 end
 
+-- Loading animation: a ring of gold dots with a bright head and a fading tail. It only
+-- runs while shown.
+function W.Spinner(parent, size)
+  local f = CreateFrame("Frame", nil, parent)
+  size = size or 32
+  f:SetSize(size, size)
+  local n, radius, dots = 12, size / 2 - 3, {}
+  for i = 1, n do
+    local angle = -(i - 1) / n * 2 * math.pi + math.pi / 2
+    local t = f:CreateTexture(nil, "ARTWORK")
+    t:SetTexture(FLAT)
+    t:SetSize(4, 4)
+    t:SetPoint("CENTER", math.cos(angle) * radius, math.sin(angle) * radius)
+    t:SetVertexColor(1, 0.82, 0, 1)
+    dots[i] = t
+  end
+  local phase = 0
+  f:SetScript("OnUpdate", function(_, elapsed)
+    phase = (phase + elapsed * 1.1) % 1
+    local head = phase * n
+    for i, t in ipairs(dots) do
+      local behind = (head - (i - 1)) % n
+      t:SetAlpha(math.max(0.12, 1 - behind / n * 1.1))
+      local s = behind < 1 and 5 or 4
+      t:SetSize(s, s)
+    end
+  end)
+  return f
+end
+
+-- Modal message: dims the screen, sits above everything, always in the middle of the
+-- screen and can't be moved. OK, Esc or a click outside closes it.
+local alert
+function W.Alert(title, text)
+  if not alert then
+    alert = CreateFrame("Frame", "GarimpoAlert", UIParent)
+    alert:SetAllPoints(UIParent)
+    alert:SetFrameStrata("FULLSCREEN_DIALOG")
+    alert:EnableMouse(true)   -- blocks clicks on what is behind
+    local dim = alert:CreateTexture(nil, "BACKGROUND")
+    dim:SetAllPoints()
+    dim:SetTexture(FLAT)
+    dim:SetVertexColor(0, 0, 0, 0.55)
+    alert:SetScript("OnMouseDown", function(self) self:Hide() end)
+
+    local box = CreateFrame("Frame", nil, alert, "BackdropTemplate")
+    box:SetPoint("CENTER", UIParent, "CENTER", 0, 40)
+    box:SetWidth(380)
+    box:EnableMouse(true)   -- clicks inside don't close it
+    W.Window(box, 34)
+    local icon = box:CreateTexture(nil, "ARTWORK")
+    icon:SetSize(20, 20)
+    icon:SetPoint("TOPLEFT", 12, -8)
+    icon:SetTexture("Interface\\Icons\\INV_Misc_Coin_01")
+    W.IconFrame(icon)
+    box.title = W.Font(box, 15, W.C.gold)
+    box.title:SetPoint("LEFT", icon, "RIGHT", 8, 0)
+    box.title:SetPoint("RIGHT", box, "RIGHT", -12, 0)
+    box.text = W.Font(box, 13, W.C.ink, "CENTER")
+    box.text:SetPoint("TOPLEFT", 20, -52)
+    box.text:SetPoint("TOPRIGHT", -20, -52)
+    box.text:SetWordWrap(true)
+    box.ok = W.Button(box, nil, 120, function() alert:Hide() end, "primary")
+    box.ok:SetText(OKAY or "OK")
+    box.ok:SetPoint("BOTTOM", 0, 16)
+    alert.box = box
+    tinsert(UISpecialFrames, "GarimpoAlert")
+    W.FadeIn(alert, 0.15)
+  end
+  local box = alert.box
+  box.title:SetText(title or "Garimpo")
+  box.text:SetText(text or "")
+  box:SetHeight(52 + box.text:GetStringHeight() + 62)
+  alert:Show()
+  alert:Raise()
+  PlaySound(SOUNDKIT and SOUNDKIT.IG_MAINMENU_OPEN or 850)
+end
+
 -- Fades the frame in each time it is shown.
 function W.FadeIn(frame, duration)
   local ag = frame:CreateAnimationGroup()
@@ -656,7 +734,8 @@ end
 -- Scrolling table. cols = { { width = n, justify = "LEFT", header = "KEY", wrap = bool, bar = bool, size = n } }
 -- Data rows: { cells = { ... }, sort = { value per column }, icon = texture, iconCol = n,
 --   link = itemLink, itemID = id, tip = { lines }, extra = { lines after the item tooltip },
---   onClick = fn, check = bool, onCheck = fn,
+--   onClick = fn, check = bool, onCheck = fn, searchID = item for the right-click search
+--   when the row shows something else (a recipe, a zone),
 --   tone = "current"|"done"|"mile"|"top", colors = { [col] = color } }
 -- Rows with `sort` values can be sorted by clicking the column titles.
 function W.List(parent, cols, rowHeight)
@@ -759,18 +838,29 @@ function W.List(parent, cols, rowHeight)
           GameTooltip:AddLine(" ")
           for _, line2 in ipairs(d.extra) do GameTooltip:AddLine(line2, 1, 1, 1, true) end
         end
+        GameTooltip:AddLine(L.RIGHT_CLICK_SEARCH, W.C.muted[1], W.C.muted[2], W.C.muted[3])
         GameTooltip:Show()
       elseif d.tip then
         GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
         for i2, line2 in ipairs(d.tip) do
           if i2 == 1 then GameTooltip:SetText(line2) else GameTooltip:AddLine(line2, 1, 1, 1, true) end
         end
+        if d.searchID then GameTooltip:AddLine(L.RIGHT_CLICK_SEARCH, W.C.muted[1], W.C.muted[2], W.C.muted[3]) end
         GameTooltip:Show()
       end
     end)
     r:SetScript("OnLeave", GameTooltip_Hide)
-    r:SetScript("OnClick", function(self)
-      if self.data and self.data.onClick then self.data.onClick(self.data) end
+    -- Right click on an item row searches it in the Auction House, in every list.
+    r:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+    r:SetScript("OnClick", function(self, button)
+      local d = self.data
+      if not d then return end
+      if button == "RightButton" then
+        local id = d.itemID or d.searchID or (d.link and tonumber(d.link:match("item:(%d+)")))
+        if id then ns.ShowInAuctionHouse(id) end
+        return
+      end
+      if d.onClick then d.onClick(d) end
     end)
     r:SetScript("OnDoubleClick", function(self)
       if self.data and self.data.onDoubleClick then self.data.onDoubleClick(self.data) end

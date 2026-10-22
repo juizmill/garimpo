@@ -30,6 +30,7 @@ end
 ns.scan = { state = "idle", done = 0, total = 0 }
 ns.listings = {}            -- [itemID] = sorted listings { unit, count, mine, auctionID, commodity, itemKey }
 ns.deals = {}
+ns.dealsReady = false       -- the Deals tab shows ns.deals only after a scan in this visit
 
 local function setState(state, done, total)
   ns.scan.state, ns.scan.done, ns.scan.total = state, done or 0, total or 0
@@ -106,6 +107,7 @@ local function finishFull(byItem, count, mode)
   ns.db.lastScanItems, ns.db.lastScanMode = items, mode
   ns:PruneHistory()
   setState("idle")
+  ns.dealsReady = true
   ns:FindDeals()
   ns:Fire("PRICES")
   if mode == "browse" then
@@ -113,6 +115,9 @@ local function finishFull(byItem, count, mode)
   else
     ns.Print(L.SCAN_DONE:format(ns.Num(count), ns.Num(items), #ns.deals))
   end
+  local after = ns.afterFull
+  ns.afterFull = nil
+  if after then after() end
 end
 
 -- Browse scan ---------------------------------------------------------------------------
@@ -236,6 +241,52 @@ function ns:FullScan()
     if ns.scan.state == "waiting" then fallbackToBrowse() end
   end)
 end
+
+-- "Check deals": reads the whole Auction House (the full scan, or a browse scan while the
+-- full scan is cooling down), finds the best deals in it, then searches those items one
+-- by one for real prices, quantities and auction IDs. ns.checkingDeals is true meanwhile.
+function ns:CheckDeals(done)
+  if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
+  if self.scan.state ~= "idle" then return end
+  self.checkingDeals = true
+  self.afterFull = function()
+    local ids, seen = {}, {}
+    for _, d in ipairs(self.deals) do
+      if not seen[d.id] then
+        seen[d.id] = true
+        ids[#ids + 1] = d.id
+      end
+    end
+    local function finish()
+      self.checkingDeals = false
+      self:Fire("DEALS")
+      if done then done() end
+    end
+    if #ids == 0 then finish() else self:QuickSearch(ids, finish) end
+  end
+  self:Fire("DEALS")
+  if not useBrowse() and self:FullScanWait() == 0 then
+    self:FullScan()
+  else
+    startBrowse()
+  end
+  -- The scan couldn't start.
+  if self.scan.state == "idle" then
+    self.checkingDeals, self.afterFull = false, nil
+    self:Fire("DEALS")
+  end
+end
+
+ns:On("AUCTION_HOUSE_CLOSED", function()
+  ns.checkingDeals, ns.afterFull = false, nil
+end)
+
+-- Each visit to the Auction House starts with an empty Deals tab: deals from an earlier
+-- visit may be gone, so they only show again after a scan.
+ns:On("AUCTION_HOUSE_SHOW", function()
+  wipe(ns.deals)
+  ns.dealsReady, ns.dealStats = false, nil
+end)
 
 ns:On("REPLICATE_ITEM_LIST_UPDATE", function()
   if ns.scan.state == "waiting" then processReplicate() end
@@ -392,8 +443,18 @@ end)
 
 -- What an item is worth for a deal: its average over the previous days (one past day is
 -- enough), or today's market value when history isn't required.
+-- Days of price history the deals average: 7 for reagents and other crafting materials,
+-- whose prices move fast, 15 for everything else.
+local REAGENT_CLASSES = { [5] = true, [7] = true }   -- Reagent, Trade Goods
+function ns:ReferenceDays(id)
+  if ns.Reagents[id] then return 7 end
+  local classID = select(6, ns.ItemInfoInstant(id))
+  return REAGENT_CLASSES[classID] and 7 or 15
+end
+
+-- Value the deals compare against: the average market value of the last 7 or 15 days.
 function ns:Reference(id)
-  local cur, avg, _, _, days = self:PriceStats(id)
+  local cur, avg, _, _, days = self:PriceStats(id, self:ReferenceDays(id))
   if avg and days >= 1 then return avg end
   if not self.db.settings.deals.requireHistory then return cur end
   return nil
@@ -409,7 +470,7 @@ local function dealKey(id, l)
 end
 
 local MAX_DEALS = 50
-local PER_ITEM = 3   -- so one item can't fill the whole list
+local PER_ITEM = 1   -- one row per item: its best deal (the others open under it)
 
 -- The 50 best deals you can pay for now. First the ones that reach your margin (spread and
 -- minimum profit), by profit; if there are fewer than 50, the list is completed with the
@@ -516,11 +577,52 @@ local function locate(d)
   end)
 end
 
+-- Estimated cost of `qty` units of a commodity: the cheapest listings of other players,
+-- the rest at the row's price.
+local function commodityCost(d, qty)
+  local sum, n = 0, 0
+  for _, l in ipairs(ns.listings[d.id] or {}) do
+    if not l.mine and n < qty then
+      local take = math.min(l.count, qty - n)
+      sum, n = sum + l.unit * take, n + take
+    end
+  end
+  return sum + math.max(0, qty - n) * d.l.unit
+end
+
+-- Checked before asking the game, so a purchase you can't pay for never starts.
+local function enoughGold(cost)
+  local money = GetMoney()
+  if cost <= money then return true end
+  ns.W.Alert(L.NOT_ENOUGH_GOLD_TITLE, L.NOT_ENOUGH_GOLD:format(ns.Money(cost), ns.Money(money)))
+  return false
+end
+
+-- The game may refuse a purchase without a failure event: after 10 seconds the button
+-- stops waiting and offers "Reload".
+local function watchBuying(d)
+  C_Timer.After(10, function()
+    if d.state == "buying" then
+      if pendingCommodity == d then pendingCommodity = nil end
+      d.state = "failed"
+      ns.Print(L.BUY_FAILED)
+      ns:Fire("DEALS")
+    end
+  end)
+end
+
 -- Called from a click on a deal's button.
 function ns:BuyDeal(d)
   if not ns.ahOpen then ns.Print(L.SCAN_NEED_AH); return end
   if d.state == "locating" or d.state == "buying" or d.state == "quote" then return end
   local l = d.l
+  -- The purchase failed: "Reload" searches only this item again (real price, quantity and
+  -- auction ID) and the button goes back to "Buy".
+  if d.state == "failed" then
+    d.needsLocate = nil
+    locate(d)
+    return
+  end
   -- An item auction already bought (or gone): look for the next one that is still a deal.
   if not l.commodity and (d.state == "gone" or d.needsLocate) then
     d.needsLocate = nil
@@ -530,21 +632,54 @@ function ns:BuyDeal(d)
   if l.commodity then
     -- Commodities: the quantity from the row's box; the quote covers the cheapest units.
     if d.state == "confirm" then
+      if not enoughGold(d.quote or 0) then
+        ns:CancelBuy(d)
+        return
+      end
       AH.ConfirmCommoditiesPurchase(d.id, d.qtyQuoted)
       d.state = "buying"
+      watchBuying(d)
     else
-      d.qtyQuoted = ns.DealBuyQty(d)
+      -- extraQty: units of other auctions checked under the deal (Deals tab).
+      local qty = ns.DealBuyQty(d) + (d.extraQty or 0)
+      if not enoughGold(commodityCost(d, qty)) then
+        ns:Fire("DEALS")
+        return
+      end
+      d.qtyQuoted = qty
       pendingCommodity = d
       AH.StartCommoditiesPurchase(d.id, d.qtyQuoted)
       d.state = "quote"
+      -- No answer (e.g. more units than are for sale): never leave the button stuck.
+      C_Timer.After(5, function()
+        if d.state == "quote" then
+          if pendingCommodity == d then pendingCommodity = nil end
+          d.state = "failed"
+          ns.Print(L.BUY_FAILED)
+          ns:Fire("DEALS")
+        end
+      end)
     end
   elseif l.auctionID then
+    if not enoughGold(l.unit * l.count) then return end
     AH.PlaceBid(l.auctionID, l.unit * l.count)
     d.state = "buying"
     inFlight[#inFlight + 1] = d
+    watchBuying(d)
   else
     locate(d)
     return
+  end
+  ns:Fire("DEALS")
+end
+
+-- Gives up a purchase that is waiting for the confirming click (a commodity quote): the
+-- game drops the quote and the button goes back to "Buy".
+function ns:CancelBuy(d)
+  if d.state == "confirm" or d.state == "quote" then
+    if pendingCommodity == d then pendingCommodity = nil end
+    if AH.CancelCommoditiesPurchase then pcall(AH.CancelCommoditiesPurchase) end
+    d.state, d.quote, d.qtyQuoted = nil, nil, nil
   end
   ns:Fire("DEALS")
 end
@@ -559,6 +694,36 @@ end)
 
 -- After a purchase the row stays usable: commodities quote again on the next click; an
 -- item auction is gone, so the next click looks for another one.
+-- After a purchase the lowest price is the cheapest auction that is left, not the one just
+-- bought (nobody else selling: the market value).
+local function refreshLowest(id)
+  local e = ns.db.market[id]
+  if not e then return end
+  for _, l in ipairs(ns.listings[id] or {}) do
+    if not l.mine and l.count > 0 then
+      e.p = l.unit
+      return
+    end
+  end
+  e.p = e.m or e.p
+end
+
+-- A commodity purchase takes the cheapest units first.
+local function consumeCheapest(id, qty)
+  local list = ns.listings[id]
+  if not list then return end
+  for _, l in ipairs(list) do
+    if qty <= 0 then break end
+    if not l.mine then
+      local take = math.min(l.count, qty)
+      l.count, qty = l.count - take, qty - take
+    end
+  end
+  for i = #list, 1, -1 do
+    if list[i].count <= 0 then table.remove(list, i) end
+  end
+end
+
 local function bought(d)
   local qty = d.qtyQuoted or d.l.count
   ns.Print(L.BOUGHT:format(qty, ns.ItemName(d.id), ns.PlainMoney(d.quote or d.l.unit * qty)))
@@ -571,8 +736,12 @@ local function bought(d)
       if l == d.l then table.remove(list, i); break end
     end
     d.needsLocate = true
+  else
+    consumeCheapest(d.id, qty)
   end
+  refreshLowest(d.id)
   ns:Fire("DEALS")
+  ns:Fire("PRICES")
 end
 
 ns:On("COMMODITY_PURCHASE_SUCCEEDED", function()
@@ -583,7 +752,7 @@ end)
 
 ns:On("COMMODITY_PURCHASE_FAILED", function()
   local d = pendingCommodity
-  if d then d.state = nil end
+  if d then d.state = "failed" end   -- the button becomes "Reload" for this item
   pendingCommodity = nil
   ns.Print(L.BUY_FAILED)
   ns:Fire("DEALS")
@@ -599,10 +768,18 @@ ns:On("AUCTION_HOUSE_PURCHASE_COMPLETED", function(auctionID)
   end
 end)
 
+-- Errors such as "not enough money" arrive here, for items and commodities alike.
 ns:On("AUCTION_HOUSE_SHOW_ERROR", function()
+  local failed = false
   for _, d in ipairs(inFlight) do
-    if d.state == "buying" then d.state = "gone" end
+    if d.state == "buying" then d.state, failed = "failed", true end
   end
   wipe(inFlight)
+  local d = pendingCommodity
+  if d and (d.state == "quote" or d.state == "buying" or d.state == "confirm") then
+    d.state, d.quote, failed = "failed", nil, true
+    pendingCommodity = nil
+  end
+  if failed then ns.Print(L.BUY_FAILED) end
   ns:Fire("DEALS")
 end)

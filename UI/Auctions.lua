@@ -261,32 +261,49 @@ ns:On("CHAT_MSG_SYSTEM", function(msg)
   end
 end)
 
--- Mailbox: a sold auction leaves the list once its "Auction successful" mail is gone,
--- i.e. its gold was taken.
+-- Mailbox: a sold auction leaves the "All" list once its gold was taken, and stays in the
+-- sales log ("Sold"). A sale is still waiting while an "Auction successful" mail with gold
+-- for its item is in the inbox. With the mailbox open, a sale with no such mail leaves when
+-- its mail was seen before, or when the sale is older than the mail delay (the gold was
+-- taken some other way, e.g. by another mail addon).
+local MAIL_DELAY = 60 * 60   -- one hour, the mail delay of a sale
 local soldSubject
+
+-- Item name of a sold-auction mail with gold, or nil. The invoice gives the exact name;
+-- the subject of a stack reads "Name (20)", so the count is dropped.
+local function soldMailName(i, subject, money)
+  if not (money and money > 0) then return nil end
+  if GetInboxInvoiceInfo then
+    local kind, itemName = GetInboxInvoiceInfo(i)
+    if kind == "seller" and itemName then return itemName end
+  end
+  local name = subject and soldSubject and subject:match(soldSubject)
+  return name and (name:gsub("%s*%(%d+%)$", "")) or nil
+end
+
 ns:On("MAIL_INBOX_UPDATE", function()
   if not ns.char then return end
   soldSubject = soldSubject or toPattern(AUCTION_SOLD_MAIL_SUBJECT)
-  if not soldSubject then return end
   local inMail = {}
   for i = 1, GetInboxNumItems() do
     local _, _, _, subject, money = GetInboxHeaderInfo(i)
-    local name = subject and subject:match(soldSubject)
-    if name and money and money > 0 then inMail[name] = (inMail[name] or 0) + 1 end
+    local name = soldMailName(i, subject, money)
+    if name then inMail[name] = (inMail[name] or 0) + 1 end
   end
-  local list, changed = records(), false
+  local list, changed, now = records(), false, time()
   -- Count sold records per item, oldest first; keep as many as there are mails.
   local kept = {}
   for i = #list, 1, -1 do
     local r = list[i]
     if r.status == "sold" then
-      local n = inMail[r.name] or 0
-      kept[r.name] = (kept[r.name] or 0) + 1
-      if r.inMail and kept[r.name] > n then
+      if type(r.itemID) == "number" and (not r.name or r.name:find("^item:")) then r.name = ns.ItemName(r.itemID) end
+      local name = r.name or "?"
+      kept[name] = (kept[name] or 0) + 1
+      if kept[name] <= (inMail[name] or 0) then
+        r.inMail = true
+      elseif r.inMail or now - (r.endedAt or now) > MAIL_DELAY then
         table.remove(list, i)
         changed = true
-      elseif kept[r.name] <= n then
-        r.inMail = true
       end
     end
   end
@@ -658,6 +675,11 @@ ns:RegisterView("auctions", function(parent)
   })
   filter:Select("all")
 
+  -- Sum of the gold in the list shown, next to the filters.
+  local sum = W.Font(f, 13, W.C.ink, "RIGHT")
+  sum:SetPoint("RIGHT", f, "TOPRIGHT", 0, -56)
+  sum:SetPoint("LEFT", filter, "RIGHT", 12, 0)
+
   local list = W.List(f, {
     { width = 180, header = "COL_ITEM" },
     { width = 40, justify = "RIGHT", header = "COL_QTY" },
@@ -727,10 +749,16 @@ ns:RegisterView("auctions", function(parent)
     active:Set(nActive .. "  " .. ns.Color("muted", "(" .. ns.Money(vActive) .. ")"))
     mail:Set(ns.Money(vMail) .. "  " .. ns.Color("muted", "(" .. nMail .. ")"), W.C.up)
     sold:Set(ns.Money(vSold), W.C.up)
+    if self.filter == "all" then
+      sum:SetText(L.SUM_ALL:format(ns.Money(vActive + vMail), #rows))
+    end
     if self.filter == "sold" or self.filter == "bought" then
       local bought = self.filter == "bought"
       data = {}
       local log = bought and ns.char.purchases or ns.char.sales
+      local total = 0
+      for _, s in ipairs(log) do total = total + (s.total or 0) end
+      sum:SetText((bought and L.SUM_BOUGHT or L.SUM_SOLD):format(ns.Money(total), #log))
       for i = #log, 1, -1 do
         local s = log[i]
         local id = type(s.itemID) == "number" and s.itemID or nil

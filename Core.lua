@@ -252,6 +252,29 @@ function ns.Price(id)
   return e and e.p or nil
 end
 
+-- Right-click on any item in Garimpo: shows it in the game's own Auction House window
+-- (exact-name search). With the Auction House closed, says so in the chat.
+function ns.ShowInAuctionHouse(id)
+  local ah = AuctionHouseFrame
+  if not (ns.ahOpen and ah and ah:IsShown()) then
+    ns.Print(ns.L.SCAN_NEED_AH)
+    return
+  end
+  local name = type(id) == "number" and ns.ItemInfo(id)
+  if not name then return end
+  if ah.SetDisplayMode and AuctionHouseFrameDisplayMode then
+    pcall(ah.SetDisplayMode, ah, AuctionHouseFrameDisplayMode.Buy)
+  end
+  local bar = ah.SearchBar
+  if not (bar and bar.SearchBox) then return end
+  bar.SearchBox:SetText('"' .. name .. '"')
+  if bar.StartSearch then
+    pcall(bar.StartSearch, bar)
+  elseif bar.SearchButton then
+    bar.SearchButton:Click()
+  end
+end
+
 -- Market value: average of the cheapest 15% of the quantity listed. Used for values and trends.
 function ns.Market(id)
   local e = type(id) == "number" and ns.db and ns.db.market[id]

@@ -99,9 +99,11 @@ function ns:PruneHistory()
   end
 end
 
--- Returns current market value, 7-day average, change since the last recorded day,
--- difference from the 7-day average (fractions) and how many past days are recorded.
-function ns:PriceStats(id)
+-- Returns current market value, the average of the last `window` days (7 by default),
+-- change since the last recorded day, difference from that average (fractions) and how
+-- many past days in the window are recorded.
+function ns:PriceStats(id, window)
+  window = window or 7
   local cur = ns.Market(id)
   local history = self.db and self.db.prices[id]
   local today = ns.Today()
@@ -109,7 +111,7 @@ function ns:PriceStats(id)
   if history then
     for d, p in pairs(history) do
       if d < today then
-        if d >= today - 7 then sum, n = sum + p, n + 1 end
+        if d >= today - window then sum, n = sum + p, n + 1 end
         if not prevDay or d > prevDay then prevDay, prev = d, p end
       end
     end
@@ -291,14 +293,15 @@ function ns:BagReport(includeBank)
     e.count = e.count + count
   end
   eachSlot(bagList(), function(_, _, info)
-    if not info.isBound then add(info.itemID, info.stackCount or 1, info.quality) end
+    -- Quality from the item data when the container doesn't say.
+    if not info.isBound then add(info.itemID, info.stackCount or 1, info.quality or select(3, ns.ItemInfo(info.itemID))) end
   end)
   if includeBank then
     for id, n in pairs(self.char.bank) do add(id, n, select(3, ns.ItemInfo(id))) end
   end
 
   local totals = { value = 0, sell = 0, junk = 0 }
-  local rows = {}
+  local rows, unpriced = {}, {}
   for _, e in ipairs(list) do
     if e.quality == 0 then
       local sell = select(11, ns.ItemInfo(e.id)) or 0
@@ -314,11 +317,15 @@ function ns:BagReport(includeBank)
         totals.value = totals.value + e.total
         if e.advice == "sell" then totals.sell = totals.sell + e.total end
         rows[#rows + 1] = e
+      else
+        e.noPrice = true
+        unpriced[#unpriced + 1] = e
       end
     end
   end
   table.sort(rows, function(a, b) return (a.total or a.junk or 0) > (b.total or b.junk or 0) end)
-  return rows, totals
+  -- unpriced: items never seen on the Auction House, so they have no price yet.
+  return rows, totals, unpriced
 end
 
 function ns:SellJunk()
@@ -598,6 +605,17 @@ function ns:ProfessionNeeds(key)
   end
   table.sort(list, function(a, b) return (a.unit or 0) * a.miss > (b.unit or 0) * b.miss end)
   return list, target, skill
+end
+
+-- Average unit price you paid for an item at the Auction House in the last 30 days, or nil.
+function ns:PurchaseCost(id)
+  local total, qty = 0, 0
+  for _, p in ipairs(self.char and self.char.purchases or {}) do
+    if p.itemID == id and p.total and p.total > 0 and p.qty and p.qty > 0 then
+      total, qty = total + p.total, qty + p.qty
+    end
+  end
+  return qty > 0 and total / qty or nil
 end
 
 -- Shopping list (Auction House panel > Professions tab): { { id, qty } }, kept per character.

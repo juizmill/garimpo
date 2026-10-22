@@ -395,7 +395,7 @@ ns.Routes.cooking = {
     mile("quest", 225, { en = "Clamlette Surprise", pt = "Surpresa de Marisco" }, 225, 35,
       { H = { "Dirge Quikcleave", 1446 }, A = { "Dirge Quikcleave", 1446 } },
       "Bring 12 Giant Egg, 10 Zesty Clam Meat and 20 Alterac Swiss.",
-      "Leve 12 Ovo Gigante, 10 Carne de Marisco Picante e 20 Queijo Suíço de Alterac."),
+      "Leve 12 Ovos Gigantes, 10 Carnes de Marisco Picante e 20 Queijos Suíços de Alterac."),
     step(225, 275,
       opt(craft("Spotted Yellowtail", "Rabo-amarelo Pintado", nil, 65, { { 4603, 1 } })),
       opt(craft("Filet of Redgill", "Filé de Guelra-rubra", nil, 65, { { 13758, 1 } })),
@@ -415,7 +415,7 @@ ns.Routes.fishing = {
   steps = {
     gather(1, 75, Z.fishStart, { 6291, 6303 }, "Use Shiny Bauble.", "Use Isca Brilhante."),
     mile("train", 75, RANK.journeyman, 50, 10),
-    gather(75, 150, Z.fish75, { 6289, 6361 }, "Buy Nightcrawlers if fish keep escaping.", "Compre Minhocas se o peixe escapar."),
+    gather(75, 150, Z.fish75, { 6289, 6361 }, "Buy Nightcrawlers if fish keep escaping.", "Compre Minhocas se os peixes estiverem escapando."),
     mile("book", 150, { en = "The Bass and You", pt = "O Robalo e Você" }, 125, 20,
       { H = { "Old Man Heming", 1434 }, A = { "Old Man Heming", 1434 } },
       "Also sold on the Auction House. Buy Bright Baubles from Heming.",
@@ -425,7 +425,7 @@ ns.Routes.fishing = {
     mile("quest", 225, { en = "Nat Pagle, Angler Extreme", pt = "Nat Pagle, Pescador Radical" }, 225, 35,
       { H = { "Nat Pagle", 1445 }, A = { "Nat Pagle", 1445 } },
       "One quest fish each from Feralas, Swamp of Sorrows, Desolace and Stranglethorn Vale.",
-      "Um peixe de missão em Feralas, Pântano das Mágoas, Desolação e Selva do Espinhaço."),
+      "Um peixe de missão de cada lugar: Feralas, Pântano das Mágoas, Desolação e Selva do Espinhaço."),
     gather(225, 300, Z.fish225, { 4603, 13759, 13760, 13422 }, "Use Bright Baubles.", "Use Isca Reluzente."),
   },
 }
@@ -453,7 +453,7 @@ ns.Routes.mining = {
   steps = withMiles({
     gather(1, 65, Z.copper, { 2770, 2835 }),
     gather(65, 125, Z.tin, { 2771, 2775, 2836 }),
-    gather(125, 175, Z.iron, { 2772, 2776, 2838 }, "At 165 you can smelt Steel Bars.", "Com 165 você já funde Barra de Aço."),
+    gather(125, 175, Z.iron, { 2772, 2776, 2838 }, "At 165 you can smelt Steel Bars.", "Com 165 você já funde Barras de Aço."),
     gather(175, 245, Z.mithril, { 3858, 7911, 7912 }),
     gather(245, 300, Z.thorium, { 10620, 12363, 12365 }),
   }),

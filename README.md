@@ -17,11 +17,11 @@ Interface em **português e inglês**, com troca na aba Config.
 | **Gráfico** | Seu gold ao longo do dia de hoje, acompanhando cada ganho e gasto. |
 | **Profissões** | Rota de cada profissão até o próximo treinador, receita mais barata em cada faixa, plano de comprar ou farmar dentro do seu orçamento, onde farmar e onde comprar. |
 | **Config** | Idioma, margens de preço, som, seta, minimapa e opções de profissão. |
-| **Painel do Leilão** | Abre junto com a Casa de Leilão, com quatro abas: **Postar** (o que vender, com o preço sugerido, um clique por item), **Ofertas**, **Cancelar** (os leilões marcados, ou todos os cortados) e **Ignorados**. |
-
-Em todas as listas, clique no título de uma coluna para ordenar; clique de novo para inverter.
+| **Painel do Leilão** | Abre junto com a Casa de Leilão, com cinco abas: **Postar** (o que vender, com o preço sugerido, um clique por item), **Ofertas**, **Profissão** (a lista de compras das profissões), **Cancelar** (os leilões marcados, ou todos os cortados) e **Ignorados**. |
 | **Seta de navegação** | Aponta para a área de farm, para o vendedor mais próximo ou para seus pontos de coleta, com a distância em jardas. |
 | **Tooltip** | Preço no Leilão, média de 7 dias, tendência e sugestão em qualquer item. |
+
+Em todas as listas, clique no título de uma coluna para ordenar; clique de novo para inverter.
 
 ## Requisitos
 

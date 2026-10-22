@@ -80,12 +80,24 @@ local function makeRow(parent, view)
   end, "primary")
   r.buy:SetHeight(20)
   r.buy:SetPoint("RIGHT", -COL.buy, 0)
+  -- Shown while a purchase waits for the confirming click (or a queue runs): gives it up.
+  r.cancel = W.Close(r, function()
+    if r.deal then ns:CancelBuy(r.deal) end
+  end)
+  r.cancel:SetPoint("RIGHT", -(COL.buy), 0)
+  r.cancel:HookScript("OnEnter", function(self)
+    GameTooltip:SetOwner(self, "ANCHOR_TOP")
+    GameTooltip:SetText(L.CANCEL_BUY)
+    GameTooltip:Show()
+  end)
+  r.cancel:HookScript("OnLeave", GameTooltip_Hide)
+  r.cancel:Hide()
   -- Units to buy (commodities); items are bought one auction at a time.
   r.buyQty = W.Edit(r, 36, function(text)
     local v = tonumber(text)
     if r.deal and v and v > 0 then
       r.deal.buyQty, r.deal.qtyEdited = math.floor(v), true
-      if r.deal.state == "confirm" then r.deal.state = nil end   -- price must be quoted again
+      ns:CancelBuy(r.deal)   -- a pending quote is for the old quantity: quote again
     end
   end)
   r.buyQty:SetMaxLetters(4)
@@ -109,15 +121,14 @@ local function makeRow(parent, view)
     GameTooltip:SetHyperlink("item:" .. r.entry.id)
     GameTooltip:AddLine(" ")
     GameTooltip:AddLine(L.SHOPPING_CLICK_OPEN, 0.6, 0.56, 0.49)
-    GameTooltip:AddLine(L.DOUBLE_CLICK_SEARCH, 0.6, 0.56, 0.49)
+    GameTooltip:AddLine(L.RIGHT_CLICK_SEARCH, 0.6, 0.56, 0.49)
     GameTooltip:Show()
   end)
   hover:SetScript("OnLeave", GameTooltip_Hide)
-  hover:SetScript("OnClick", function()
-    if r.entry then view:SetOpen(r.entry.id) end
-  end)
-  hover:SetScript("OnDoubleClick", function()
-    if r.entry then ns.ShowInAuctionHouse(r.entry.id) end
+  hover:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+  hover:SetScript("OnClick", function(_, button)
+    if not r.entry then return end
+    if button == "RightButton" then ns.ShowInAuctionHouse(r.entry.id) else view:SetOpen(r.entry.id) end
   end)
   return r
 end
@@ -354,7 +365,19 @@ function ns.BuildShoppingView(parent)
       end
       r.buyQty:SetEnabled(not single)
       r.buy:SetText(ns.DealButtonText(d))
-      r.buy:SetEnabled(canClick(d))
+      -- More units than are for sale: the button waits (number in red) until it fits.
+      local forSale = d.l.commodity and ns.UnitsForSale(e.id)
+      local tooMany = forSale and ns.DealBuyQty(d) > forSale
+      local c = tooMany and W.C.down or W.C.ink
+      r.buyQty:SetTextColor(c[1], c[2], c[3])
+      r.buy:SetEnabled(canClick(d) and not tooMany)
+      -- While a purchase is pending the button makes room for the cancel button, and the
+      -- quantity stays visible but locked.
+      local pending = d.state == "confirm"
+      r.cancel:SetShown(pending)
+      r.buy:SetWidth(pending and 78 or 100)
+      r.buy:SetPoint("RIGHT", -(COL.buy + (pending and 22 or 0)), 0)
+      if pending then r.buyQty:SetEnabled(false) end
       r:Show()
       if open[e.id] then y = addAuctions(e, d, y) end
     end
